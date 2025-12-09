@@ -145,16 +145,18 @@ class TikTok_Api_Client {
 
         $media_type = $this->detect_media_type( $file_path );
 
+        $secure_file_url = set_url_scheme( $file_url, 'https' );
+
         if ( 'PHOTO' === $media_type ) {
             $source_info = array(
                 'source'             => 'PULL_FROM_URL',
-                'photo_images'       => array( $file_url ),
-                'photo_cover_index'  => 1,
+                'photo_images'       => array( $secure_file_url ),
+                'photo_cover_index'  => 0,
             );
         } else {
             $source_info = array(
                 'source'    => 'PULL_FROM_URL',
-                'video_url' => $file_url,
+                'video_url' => $secure_file_url,
             );
             $media_type  = 'VIDEO';
         }

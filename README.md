@@ -48,6 +48,8 @@ If you submit a revision to TikTok, note any changes you made (for example, upda
 - Tokens are stored in `wp_options` with encryption using the WordPress salt.
 - The cron interval uses the value chosen in settings (5/15/30/60 minutes).
 - Logging retains the latest 50 API responses when enabled and can be viewed under **TikTok Posts → API Logs**.
+- TikTok requires public HTTPS-accessible media URLs for pull-from-URL publishing; ensure your media library files are served ov
+er HTTPS.
 
 ## Development
 The codebase is organized into the following components:
