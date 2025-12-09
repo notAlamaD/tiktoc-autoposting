@@ -6,7 +6,7 @@ WordPress plugin for automatically publishing posts to TikTok using the official
 - OAuth-based connection with storage of access/refresh tokens.
 - Automatic or queued publishing for selected post types when first published.
 - Description templating with common post tags.
-- Queue dashboard with status, attempts, and logging controls.
+- Queue dashboard with status, attempts, logging controls, and manual posting tools.
 - Connected accounts table to review the TikTok profile linked to the plugin.
 - Cron-based retries and token refresh handling.
 
@@ -22,6 +22,7 @@ WordPress plugin for automatically publishing posts to TikTok using the official
 4. Choose which post types and statuses should trigger posting.
 5. Configure media source, description template, queue usage, interval, and optional API logging.
 6. Use **TikTok Posts** menu to inspect the queue, see connected accounts, and review recent statuses.
+7. From **TikTok Posts → TikTok Queue**, you can manually add any published post to the queue (or trigger an immediate send) by selecting it from the dropdown or entering a Post ID.
 
 ### TikTok app setup
 - Create a TikTok developer application and enable content publishing permissions.

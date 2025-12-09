@@ -54,7 +54,7 @@ class TikTok_Queue {
     public function enqueue( $post_id ) {
         global $wpdb;
 
-        $wpdb->insert(
+        $result = $wpdb->insert(
             $wpdb->prefix . self::TABLE,
             array(
                 'post_id'    => $post_id,
@@ -66,6 +66,24 @@ class TikTok_Queue {
             ),
             array( '%d', '%s', '%d', '%s', '%s', '%s' )
         );
+
+        return $result ? (int) $wpdb->insert_id : 0;
+    }
+
+    /**
+     * Get queue item by id.
+     *
+     * @param int $id Row id.
+     * @return array|null
+     */
+    public function get( $id ) {
+        global $wpdb;
+
+        $table = $wpdb->prefix . self::TABLE;
+
+        $row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d", $id ), ARRAY_A );
+
+        return $row ?: null;
     }
 
     /**

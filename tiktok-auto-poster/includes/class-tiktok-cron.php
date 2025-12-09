@@ -92,50 +92,60 @@ class TikTok_Cron {
         $items = $queue->get_pending( 5 );
 
         foreach ( $items as $item ) {
-            $queue->update( $item['id'], array( 'status' => 'processing' ) );
-
-            $post = get_post( $item['post_id'] );
-            if ( ! $post ) {
-                $queue->update( $item['id'], array( 'status' => 'error', 'last_error' => 'Post not found' ) );
-                continue;
-            }
-
-            $media_source = tiktok_auto_poster_get_option( 'media_source', 'featured' );
-            $file_path    = tiktok_auto_poster_get_media_file( $post, $media_source );
-
-            if ( ! $file_path ) {
-                $queue->update( $item['id'], array( 'status' => 'error', 'last_error' => __( 'Media not found', 'tiktok-auto-poster' ) ) );
-                continue;
-            }
-
-            $client      = new TikTok_Api_Client();
-            $description = tiktok_auto_poster_format_description( $post, tiktok_auto_poster_get_option( 'description', '{post_title}' ) );
-
-            $upload = $client->upload_media( $file_path );
-
-            if ( is_wp_error( $upload ) ) {
-                $this->handle_error( $queue, $item, $upload->get_error_message() );
-                continue;
-            }
-
-            $media_id = $upload['data']['media_id'] ?? '';
-
-            $post_resp = $client->create_post( $media_id, $description );
-
-            if ( is_wp_error( $post_resp ) ) {
-                $this->handle_error( $queue, $item, $post_resp->get_error_message() );
-                continue;
-            }
-
-            $queue->update(
-                $item['id'],
-                array(
-                    'status'         => 'success',
-                    'tiktok_post_id' => $post_resp['data']['post_id'] ?? '',
-                    'attempts'       => $item['attempts'] + 1,
-                )
-            );
+            $this->process_item( $queue, $item );
         }
+    }
+
+    /**
+     * Process a single queue item.
+     *
+     * @param TikTok_Queue $queue Queue instance.
+     * @param array        $item Queue row.
+     */
+    public function process_item( $queue, $item ) {
+        $queue->update( $item['id'], array( 'status' => 'processing' ) );
+
+        $post = get_post( $item['post_id'] );
+        if ( ! $post ) {
+            $queue->update( $item['id'], array( 'status' => 'error', 'last_error' => 'Post not found' ) );
+            return;
+        }
+
+        $media_source = tiktok_auto_poster_get_option( 'media_source', 'featured' );
+        $file_path    = tiktok_auto_poster_get_media_file( $post, $media_source );
+
+        if ( ! $file_path ) {
+            $queue->update( $item['id'], array( 'status' => 'error', 'last_error' => __( 'Media not found', 'tiktok-auto-poster' ) ) );
+            return;
+        }
+
+        $client      = new TikTok_Api_Client();
+        $description = tiktok_auto_poster_format_description( $post, tiktok_auto_poster_get_option( 'description', '{post_title}' ) );
+
+        $upload = $client->upload_media( $file_path );
+
+        if ( is_wp_error( $upload ) ) {
+            $this->handle_error( $queue, $item, $upload->get_error_message() );
+            return;
+        }
+
+        $media_id = $upload['data']['media_id'] ?? '';
+
+        $post_resp = $client->create_post( $media_id, $description );
+
+        if ( is_wp_error( $post_resp ) ) {
+            $this->handle_error( $queue, $item, $post_resp->get_error_message() );
+            return;
+        }
+
+        $queue->update(
+            $item['id'],
+            array(
+                'status'         => 'success',
+                'tiktok_post_id' => $post_resp['data']['post_id'] ?? '',
+                'attempts'       => $item['attempts'] + 1,
+            )
+        );
     }
 
     /**

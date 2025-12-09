@@ -21,6 +21,7 @@ class TikTok_Settings {
         add_action( 'template_redirect', array( $this, 'maybe_handle_oauth_callback' ) );
         add_action( 'admin_post_tiktok_disconnect', array( $this, 'disconnect' ) );
         add_action( 'admin_post_tiktok_start_oauth', array( $this, 'start_oauth' ) );
+        add_action( 'admin_post_tiktok_manual_queue', array( $this, 'manual_enqueue' ) );
         add_action( 'update_option_tiktok_auto_poster_settings', array( $this, 'after_settings_saved' ), 10, 3 );
     }
 
@@ -315,6 +316,63 @@ class TikTok_Settings {
         }
 
         include TIKTOK_AUTO_POSTER_DIR . 'admin/views-queue.php';
+    }
+
+    /**
+     * Handle manual queue submission.
+     */
+    public function manual_enqueue() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Unauthorized', 'tiktok-auto-poster' ) );
+        }
+
+        check_admin_referer( 'tiktok_manual_queue' );
+
+        $post_id       = absint( $_POST['manual_post_id'] ?? 0 );
+        $selected_post = absint( $_POST['queued_post'] ?? 0 );
+        $send_now      = ! empty( $_POST['send_now'] );
+
+        if ( ! $post_id && $selected_post ) {
+            $post_id = $selected_post;
+        }
+
+        if ( ! $post_id ) {
+            wp_safe_redirect( add_query_arg( array( 'page' => 'tiktok-auto-poster-queue', 'manual_status' => 'error', 'manual_message' => rawurlencode( __( 'Select a post to queue.', 'tiktok-auto-poster' ) ) ), admin_url( 'admin.php' ) ) );
+            exit;
+        }
+
+        $post = get_post( $post_id );
+
+        if ( ! $post ) {
+            wp_safe_redirect( add_query_arg( array( 'page' => 'tiktok-auto-poster-queue', 'manual_status' => 'error', 'manual_message' => rawurlencode( __( 'Post not found.', 'tiktok-auto-poster' ) ) ), admin_url( 'admin.php' ) ) );
+            exit;
+        }
+
+        $queue    = new TikTok_Queue();
+        $queue_id = $queue->enqueue( $post_id );
+
+        if ( ! $queue_id ) {
+            wp_safe_redirect( add_query_arg( array( 'page' => 'tiktok-auto-poster-queue', 'manual_status' => 'error', 'manual_message' => rawurlencode( __( 'Unable to add to queue.', 'tiktok-auto-poster' ) ) ), admin_url( 'admin.php' ) ) );
+            exit;
+        }
+
+        $status = 'queued';
+
+        if ( $send_now ) {
+            $cron = new TikTok_Cron();
+            $item = $queue->get( $queue_id );
+
+            if ( $item ) {
+                $cron->process_item( $queue, $item );
+                $processed = $queue->get( $queue_id );
+                if ( $processed && ! empty( $processed['status'] ) ) {
+                    $status = $processed['status'];
+                }
+            }
+        }
+
+        wp_safe_redirect( add_query_arg( array( 'page' => 'tiktok-auto-poster-queue', 'manual_status' => $status ), admin_url( 'admin.php' ) ) );
+        exit;
     }
 
     /**
