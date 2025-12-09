@@ -109,11 +109,13 @@ class TikTok_Settings {
 
         check_admin_referer( 'tiktok_connect' );
 
-        $client_key = tiktok_auto_poster_get_option( 'client_key' );
-        $redirect   = admin_url( 'admin-post.php?action=tiktok_oauth_callback' );
+        $client_key    = tiktok_auto_poster_get_option( 'client_key' );
+        $client_secret = tiktok_auto_poster_get_option( 'client_secret' );
+        $redirect      = admin_url( 'admin-post.php?action=tiktok_oauth_callback' );
 
-        if ( empty( $client_key ) ) {
-            add_settings_error( 'tiktok_auto_poster', 'missing_client', __( 'Enter Client Key before connecting.', 'tiktok-auto-poster' ) );
+        if ( empty( $client_key ) || empty( $client_secret ) ) {
+            add_settings_error( 'tiktok_auto_poster', 'missing_client', __( 'Enter Client Key and Client Secret before connecting.', 'tiktok-auto-poster' ) );
+            set_transient( 'settings_errors', get_settings_errors(), 30 );
             wp_safe_redirect( admin_url( 'options-general.php?page=tiktok-auto-poster' ) );
             exit;
         }

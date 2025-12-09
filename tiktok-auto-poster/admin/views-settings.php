@@ -42,10 +42,11 @@ $statuses   = array(
                     </form>
                 <?php else : ?>
                     <p><?php esc_html_e( 'Not connected yet.', 'tiktok-auto-poster' ); ?></p>
-                    <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+                    <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" target="_blank">
                         <?php wp_nonce_field( 'tiktok_connect' ); ?>
                         <input type="hidden" name="action" value="tiktok_start_oauth" />
-                        <?php submit_button( __( 'Connect TikTok account', 'tiktok-auto-poster' ), 'primary', 'submit', false ); ?>
+                        <?php submit_button( __( 'Connect TikTok account', 'tiktok-auto-poster' ), 'primary', 'submit', false, array( 'formtarget' => '_blank' ) ); ?>
+                        <p class="description"><?php esc_html_e( 'After saving your credentials, click Connect to open the TikTok authorization window in a new tab.', 'tiktok-auto-poster' ); ?></p>
                     </form>
                 <?php endif; ?>
             </td>
