@@ -119,6 +119,9 @@ class TikTok_Settings {
         $sanitized['queue_enabled']    = ! empty( $input['queue_enabled'] ) ? 1 : 0;
         $sanitized['cron_interval']    = sanitize_text_field( $input['cron_interval'] ?? '15' );
         $sanitized['enable_logging']   = ! empty( $input['enable_logging'] );
+        $post_mode                     = sanitize_text_field( $input['post_mode'] ?? 'DIRECT_POST' );
+
+        $sanitized['post_mode'] = in_array( $post_mode, array( 'DIRECT_POST', 'MEDIA_UPLOAD' ), true ) ? $post_mode : 'DIRECT_POST';
 
         return $sanitized;
     }

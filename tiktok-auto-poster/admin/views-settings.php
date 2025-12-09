@@ -121,6 +121,16 @@ $statuses   = array(
                 </td>
             </tr>
             <tr>
+                <th scope="row"><?php esc_html_e( 'TikTok post mode', 'tiktok-auto-poster' ); ?></th>
+                <td>
+                    <select name="tiktok_auto_poster_settings[post_mode]">
+                        <option value="DIRECT_POST" <?php selected( $settings['post_mode'] ?? 'DIRECT_POST', 'DIRECT_POST' ); ?>><?php esc_html_e( 'Direct post (auto publish)', 'tiktok-auto-poster' ); ?></option>
+                        <option value="MEDIA_UPLOAD" <?php selected( $settings['post_mode'] ?? 'DIRECT_POST', 'MEDIA_UPLOAD' ); ?>><?php esc_html_e( 'Inbox/Draft (confirm in TikTok app)', 'tiktok-auto-poster' ); ?></option>
+                    </select>
+                    <p class="description"><?php esc_html_e( 'DIRECT_POST publishes automatically after TikTok processing. MEDIA_UPLOAD sends to inbox/drafts for manual confirmation.', 'tiktok-auto-poster' ); ?></p>
+                </td>
+            </tr>
+            <tr>
                 <th scope="row"><?php esc_html_e( 'Use queue instead of immediate posting', 'tiktok-auto-poster' ); ?></th>
                 <td><input type="checkbox" name="tiktok_auto_poster_settings[queue_enabled]" value="1" <?php checked( $settings['queue_enabled'] ?? 0, 1 ); ?> /></td>
             </tr>

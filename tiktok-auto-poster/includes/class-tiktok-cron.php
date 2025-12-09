@@ -205,7 +205,8 @@ class TikTok_Cron {
 
         $client      = new TikTok_Api_Client();
         $description = tiktok_auto_poster_format_description( $post, tiktok_auto_poster_get_option( 'description', '{post_title}' ) );
+        $post_mode   = tiktok_auto_poster_get_option( 'post_mode', 'DIRECT_POST' );
 
-        return $client->publish_content( $post, $file_path, $description );
+        return $client->publish_content( $post, $file_path, $description, $post_mode );
     }
 }

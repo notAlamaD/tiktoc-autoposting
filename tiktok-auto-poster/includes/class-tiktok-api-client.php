@@ -134,9 +134,10 @@ class TikTok_Api_Client {
      * @param WP_Post $post Post being published.
      * @param string  $file_path File path or URL to media.
      * @param string  $description Caption/description template result.
+     * @param string  $post_mode   TikTok post mode (DIRECT_POST or MEDIA_UPLOAD).
      * @return array|WP_Error
      */
-    public function publish_content( $post, $file_path, $description ) {
+    public function publish_content( $post, $file_path, $description, $post_mode = 'DIRECT_POST' ) {
         $file_url = tiktok_auto_poster_get_media_url( $file_path );
 
         if ( ! $file_url ) {
@@ -147,18 +148,24 @@ class TikTok_Api_Client {
 
         $secure_file_url = set_url_scheme( $file_url, 'https' );
 
+        if ( ! in_array( $post_mode, array( 'DIRECT_POST', 'MEDIA_UPLOAD' ), true ) ) {
+            $post_mode = 'DIRECT_POST';
+        }
+
         if ( 'PHOTO' === $media_type ) {
             $source_info = array(
                 'source'             => 'PULL_FROM_URL',
                 'photo_images'       => array( $secure_file_url ),
                 'photo_cover_index'  => 0,
             );
+            $endpoint    = self::API_BASE . 'post/publish/content/init/';
         } else {
             $source_info = array(
                 'source'    => 'PULL_FROM_URL',
                 'video_url' => $secure_file_url,
             );
             $media_type  = 'VIDEO';
+            $endpoint    = self::API_BASE . 'post/publish/video/init/';
         }
 
         $payload = array(
@@ -167,12 +174,12 @@ class TikTok_Api_Client {
                 'description' => $description,
             ),
             'source_info' => $source_info,
-            'post_mode'   => 'MEDIA_UPLOAD',
+            'post_mode'   => $post_mode,
             'media_type'  => $media_type,
         );
 
         $result = wp_remote_post(
-            self::API_BASE . 'post/publish/content/init/',
+            $endpoint,
             array(
                 'headers' => $this->auth_headers(),
                 'timeout' => 45,
@@ -183,11 +190,12 @@ class TikTok_Api_Client {
         return $this->parse_response(
             $result,
             array(
-                'endpoint' => self::API_BASE . 'post/publish/content/init/',
+                'endpoint' => $endpoint,
                 'method'   => 'POST',
                 'request'  => array(
                     'post_info'  => $payload['post_info'],
                     'source_info' => $source_info,
+                    'post_mode'  => $post_mode,
                     'media_type' => $media_type,
                 ),
             )
