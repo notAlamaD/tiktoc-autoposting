@@ -7,6 +7,7 @@ WordPress plugin for automatically publishing posts to TikTok using the official
 - Automatic or queued publishing for selected post types when first published.
 - Description templating with common post tags.
 - Queue dashboard with status, attempts, logging controls, and manual posting tools.
+- TikTok posts status dashboard showing publish states and allowing manual publishes.
 - API log viewer to inspect recent TikTok responses when troubleshooting.
 - Connected accounts table to review the TikTok profile linked to the plugin.
 - Cron-based retries and token refresh handling.
@@ -24,6 +25,7 @@ WordPress plugin for automatically publishing posts to TikTok using the official
 5. Configure media source, description template, queue usage, interval, and optional API logging.
 6. Use **TikTok Posts** menu to inspect the queue, see connected accounts, review API logs, and track recent statuses.
 7. From **TikTok Posts → TikTok Queue**, you can manually add any published post to the queue (or trigger an immediate send) by selecting it from the dropdown or entering a Post ID.
+8. From **TikTok Posts → TikTok Posts Status**, review every tracked WordPress post, see its attempts, TikTok Post ID, and publish again instantly if it is pending or errored.
 
 ### TikTok app setup
 - Create a TikTok developer application and enable content publishing permissions.
@@ -57,6 +59,7 @@ The codebase is organized into the following components:
 - `includes/class-tiktok-settings.php`: Admin settings, connected accounts, and queue pages.
 - `includes/class-tiktok-queue.php`: Database queue CRUD and activation hooks.
 - `includes/class-tiktok-cron.php`: Cron schedules and queue processing.
+- `includes/class-tiktok-posts.php`: Storage and helpers for tracking TikTok publish state per WordPress post.
 - `includes/class-tiktok-hooks.php`: Post status hooks to enqueue or publish immediately.
 - `includes/helpers.php`: Utility helpers for encryption, templating, and media selection.
 

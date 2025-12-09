@@ -59,22 +59,21 @@ class TikTok_Hooks {
             return;
         }
 
-        $client      = new TikTok_Api_Client();
-        $description = tiktok_auto_poster_format_description( $post, tiktok_auto_poster_get_option( 'description', '{post_title}' ) );
-        $response  = $client->publish_content( $post, $file_path, $description );
-        $status    = is_wp_error( $response ) ? 'error' : 'success';
-        $error_msg = is_wp_error( $response ) ? $response->get_error_message() : '';
+        $queue_id = $queue->enqueue( $post->ID );
+        $cron     = new TikTok_Cron();
+        $result   = $cron->publish_single_post( $post->ID );
 
-        $queue->enqueue( $post->ID );
-        $queue->update(
-            $this->get_latest_queue_id( $queue, $post->ID ),
-            array(
-                'status'         => $status,
-                'tiktok_post_id' => is_wp_error( $response ) ? '' : ( $response['data']['post_id'] ?? '' ),
-                'last_error'     => $error_msg,
-                'attempts'       => 1,
-            )
-        );
+        if ( $queue_id ) {
+            $queue->update(
+                $queue_id,
+                array(
+                    'status'         => 'success' === $result['status'] ? 'success' : 'error',
+                    'tiktok_post_id' => $result['post_id'] ?? '',
+                    'last_error'     => 'success' === $result['status'] ? '' : ( $result['message'] ?? '' ),
+                    'attempts'       => 1,
+                )
+            );
+        }
     }
 
     /**

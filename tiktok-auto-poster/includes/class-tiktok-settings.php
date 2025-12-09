@@ -23,6 +23,7 @@ class TikTok_Settings {
         add_action( 'admin_post_tiktok_start_oauth', array( $this, 'start_oauth' ) );
         add_action( 'admin_post_tiktok_manual_queue', array( $this, 'manual_enqueue' ) );
         add_action( 'admin_post_tiktok_delete_queue', array( $this, 'delete_queue_item' ) );
+        add_action( 'admin_post_tiktok_publish_post', array( $this, 'publish_tiktok_post' ) );
         add_action( 'update_option_tiktok_auto_poster_settings', array( $this, 'after_settings_saved' ), 10, 3 );
     }
 
@@ -62,6 +63,15 @@ class TikTok_Settings {
             array( $this, 'render_queue_page' ),
             'dashicons-format-video',
             81
+        );
+
+        add_submenu_page(
+            'tiktok-auto-poster-queue',
+            __( 'TikTok Posts Status', 'tiktok-auto-poster' ),
+            __( 'TikTok Posts Status', 'tiktok-auto-poster' ),
+            'manage_options',
+            'tiktok-auto-poster-posts',
+            array( $this, 'render_posts_page' )
         );
 
         add_submenu_page(
@@ -342,6 +352,23 @@ class TikTok_Settings {
     }
 
     /**
+     * Render TikTok posts status page.
+     */
+    public function render_posts_page() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        $posts_repo = new TikTok_Posts();
+        $posts_rows = $posts_repo->get_recent( 50 );
+
+        $publish_status  = isset( $_GET['publish_status'] ) ? sanitize_text_field( wp_unslash( $_GET['publish_status'] ) ) : '';
+        $publish_message = isset( $_GET['publish_message'] ) ? sanitize_text_field( wp_unslash( rawurldecode( $_GET['publish_message'] ) ) ) : '';
+
+        include TIKTOK_AUTO_POSTER_DIR . 'admin/views-posts.php';
+    }
+
+    /**
      * Render API logs page.
      */
     public function render_logs_page() {
@@ -453,5 +480,40 @@ class TikTok_Settings {
         }
 
         include TIKTOK_AUTO_POSTER_DIR . 'admin/views-accounts.php';
+    }
+
+    /**
+     * Publish a pending TikTok post from the status table.
+     */
+    public function publish_tiktok_post() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Unauthorized', 'tiktok-auto-poster' ) );
+        }
+
+        $record_id = absint( $_POST['record_id'] ?? 0 );
+
+        if ( ! $record_id ) {
+            wp_safe_redirect( add_query_arg( array( 'page' => 'tiktok-auto-poster-posts', 'publish_status' => 'error', 'publish_message' => rawurlencode( __( 'Record not found.', 'tiktok-auto-poster' ) ) ), admin_url( 'admin.php' ) ) );
+            exit;
+        }
+
+        check_admin_referer( 'tiktok_publish_post_' . $record_id );
+
+        $posts_repo = new TikTok_Posts();
+        $record     = $posts_repo->get( $record_id );
+
+        if ( ! $record ) {
+            wp_safe_redirect( add_query_arg( array( 'page' => 'tiktok-auto-poster-posts', 'publish_status' => 'error', 'publish_message' => rawurlencode( __( 'Record not found.', 'tiktok-auto-poster' ) ) ), admin_url( 'admin.php' ) ) );
+            exit;
+        }
+
+        $cron   = new TikTok_Cron();
+        $result = $cron->publish_single_post( $record['post_id'] );
+
+        $status  = $result['status'] ?? 'error';
+        $message = $result['message'] ?? __( 'Published to TikTok.', 'tiktok-auto-poster' );
+
+        wp_safe_redirect( add_query_arg( array( 'page' => 'tiktok-auto-poster-posts', 'publish_status' => $status, 'publish_message' => rawurlencode( $message ) ), admin_url( 'admin.php' ) ) );
+        exit;
     }
 }

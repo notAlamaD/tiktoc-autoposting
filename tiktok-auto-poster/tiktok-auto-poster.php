@@ -41,6 +41,7 @@ if ( ! defined( 'TIKTOK_AUTO_POSTER_SECRET' ) ) {
 }
 
 require_once TIKTOK_AUTO_POSTER_DIR . 'includes/helpers.php';
+require_once TIKTOK_AUTO_POSTER_DIR . 'includes/class-tiktok-posts.php';
 require_once TIKTOK_AUTO_POSTER_DIR . 'includes/class-tiktok-api-client.php';
 require_once TIKTOK_AUTO_POSTER_DIR . 'includes/class-tiktok-settings.php';
 require_once TIKTOK_AUTO_POSTER_DIR . 'includes/class-tiktok-queue.php';
@@ -51,6 +52,7 @@ class TikTok_Auto_Poster {
     public function __construct() {
         add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
         register_activation_hook( __FILE__, array( 'TikTok_Queue', 'activate' ) );
+        register_activation_hook( __FILE__, array( 'TikTok_Posts', 'activate' ) );
         register_activation_hook( __FILE__, array( 'TikTok_Settings', 'activate' ) );
         register_deactivation_hook( __FILE__, array( 'TikTok_Queue', 'deactivate' ) );
         register_deactivation_hook( __FILE__, array( 'TikTok_Settings', 'deactivate' ) );

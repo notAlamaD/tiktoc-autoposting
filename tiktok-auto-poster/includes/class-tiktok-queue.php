@@ -54,6 +54,9 @@ class TikTok_Queue {
     public function enqueue( $post_id ) {
         global $wpdb;
 
+        $posts = new TikTok_Posts();
+        $posts->mark_pending( $post_id );
+
         $result = $wpdb->insert(
             $wpdb->prefix . self::TABLE,
             array(

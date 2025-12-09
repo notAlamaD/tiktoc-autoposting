@@ -105,27 +105,16 @@ class TikTok_Cron {
     public function process_item( $queue, $item ) {
         $queue->update( $item['id'], array( 'status' => 'processing' ) );
 
-        $post = get_post( $item['post_id'] );
-        if ( ! $post ) {
-            $queue->update( $item['id'], array( 'status' => 'error', 'last_error' => 'Post not found' ) );
-            return;
-        }
+        $posts    = new TikTok_Posts();
+        $attempts = (int) $item['attempts'] + 1;
 
-        $media_source = tiktok_auto_poster_get_option( 'media_source', 'featured' );
-        $file_path    = tiktok_auto_poster_get_media_file( $post, $media_source );
+        $posts->mark_processing( $item['post_id'], $attempts );
 
-        if ( ! $file_path ) {
-            $queue->update( $item['id'], array( 'status' => 'error', 'last_error' => __( 'Media not found', 'tiktok-auto-poster' ) ) );
-            return;
-        }
+        $result = $this->publish_post_to_tiktok( $item['post_id'], $attempts );
 
-        $client      = new TikTok_Api_Client();
-        $description = tiktok_auto_poster_format_description( $post, tiktok_auto_poster_get_option( 'description', '{post_title}' ) );
-
-        $post_resp = $client->publish_content( $post, $file_path, $description );
-
-        if ( is_wp_error( $post_resp ) ) {
-            $this->handle_error( $queue, $item, $post_resp->get_error_message() );
+        if ( is_wp_error( $result ) ) {
+            $this->handle_error( $queue, $item, $result->get_error_message(), $attempts );
+            $posts->mark_error( $item['post_id'], $result->get_error_message(), $attempts );
             return;
         }
 
@@ -133,10 +122,12 @@ class TikTok_Cron {
             $item['id'],
             array(
                 'status'         => 'success',
-                'tiktok_post_id' => $post_resp['data']['post_id'] ?? '',
-                'attempts'       => $item['attempts'] + 1,
+                'tiktok_post_id' => $result['data']['post_id'] ?? '',
+                'attempts'       => $attempts,
             )
         );
+
+        $posts->mark_published( $item['post_id'], $result['data']['post_id'] ?? '', $attempts );
     }
 
     /**
@@ -146,8 +137,7 @@ class TikTok_Cron {
      * @param array        $item Queue row.
      * @param string       $message Error message.
      */
-    protected function handle_error( $queue, $item, $message ) {
-        $attempts = (int) $item['attempts'] + 1;
+    protected function handle_error( $queue, $item, $message, $attempts ) {
         $status   = $attempts >= 3 ? 'error' : 'pending';
 
         $queue->update(
@@ -158,5 +148,64 @@ class TikTok_Cron {
                 'last_error' => $message,
             )
         );
+    }
+
+    /**
+     * Publish a single post immediately, updating TikTok posts table.
+     *
+     * @param int $post_id Post ID.
+     * @return array{status:string,message?:string,post_id?:string}
+     */
+    public function publish_single_post( $post_id ) {
+        $posts    = new TikTok_Posts();
+        $record   = $posts->ensure( $post_id );
+        $attempts = (int) ( $record['attempts'] ?? 0 ) + 1;
+
+        $posts->mark_processing( $post_id, $attempts );
+
+        $result = $this->publish_post_to_tiktok( $post_id, $attempts );
+
+        if ( is_wp_error( $result ) ) {
+            $posts->mark_error( $post_id, $result->get_error_message(), $attempts );
+
+            return array(
+                'status'  => 'error',
+                'message' => $result->get_error_message(),
+            );
+        }
+
+        $posts->mark_published( $post_id, $result['data']['post_id'] ?? '', $attempts );
+
+        return array(
+            'status'   => 'success',
+            'post_id'  => $result['data']['post_id'] ?? '',
+        );
+    }
+
+    /**
+     * Build and dispatch TikTok publish request.
+     *
+     * @param int $post_id Post ID.
+     * @param int $attempts Attempt number.
+     * @return array|WP_Error
+     */
+    protected function publish_post_to_tiktok( $post_id, $attempts ) {
+        $post = get_post( $post_id );
+
+        if ( ! $post ) {
+            return new WP_Error( 'missing_post', __( 'Post not found', 'tiktok-auto-poster' ) );
+        }
+
+        $media_source = tiktok_auto_poster_get_option( 'media_source', 'featured' );
+        $file_path    = tiktok_auto_poster_get_media_file( $post, $media_source );
+
+        if ( ! $file_path ) {
+            return new WP_Error( 'media_missing', __( 'Media not found', 'tiktok-auto-poster' ) );
+        }
+
+        $client      = new TikTok_Api_Client();
+        $description = tiktok_auto_poster_format_description( $post, tiktok_auto_poster_get_option( 'description', '{post_title}' ) );
+
+        return $client->publish_content( $post, $file_path, $description );
     }
 }
