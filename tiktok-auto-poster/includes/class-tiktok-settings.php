@@ -16,10 +16,28 @@ class TikTok_Settings {
     public function __construct() {
         add_action( 'admin_menu', array( $this, 'register_menu' ) );
         add_action( 'admin_init', array( $this, 'register_settings' ) );
+        add_action( 'init', array( $this, 'register_rewrite_rules' ) );
+        add_filter( 'query_vars', array( $this, 'add_query_vars' ) );
+        add_action( 'template_redirect', array( $this, 'maybe_handle_oauth_callback' ) );
         add_action( 'admin_post_tiktok_disconnect', array( $this, 'disconnect' ) );
         add_action( 'admin_post_tiktok_start_oauth', array( $this, 'start_oauth' ) );
-        add_action( 'admin_post_tiktok_oauth_callback', array( $this, 'handle_oauth_callback' ) );
         add_action( 'update_option_tiktok_auto_poster_settings', array( $this, 'after_settings_saved' ), 10, 3 );
+    }
+
+    /**
+     * Run on plugin activation.
+     */
+    public static function activate() {
+        $self = new self();
+        $self->register_rewrite_rules();
+        flush_rewrite_rules();
+    }
+
+    /**
+     * Run on plugin deactivation.
+     */
+    public static function deactivate() {
+        flush_rewrite_rules();
     }
 
     /**
@@ -62,7 +80,7 @@ class TikTok_Settings {
         $sanitized = array();
         $sanitized['client_key']       = sanitize_text_field( $input['client_key'] ?? '' );
         $sanitized['client_secret']    = sanitize_text_field( $input['client_secret'] ?? '' );
-        $sanitized['redirect_uri']     = esc_url_raw( admin_url( 'admin-post.php?action=tiktok_oauth_callback' ) );
+        $sanitized['redirect_uri']     = esc_url_raw( $this->get_redirect_uri() );
         $sanitized['auto_post_enabled'] = ! empty( $input['auto_post_enabled'] ) ? 1 : 0;
         $sanitized['post_types']       = array_map( 'sanitize_text_field', $input['post_types'] ?? array() );
         $sanitized['statuses']         = array_map( 'sanitize_text_field', $input['statuses'] ?? array( 'publish' ) );
@@ -111,7 +129,7 @@ class TikTok_Settings {
 
         $client_key    = tiktok_auto_poster_get_option( 'client_key' );
         $client_secret = tiktok_auto_poster_get_option( 'client_secret' );
-        $redirect      = admin_url( 'admin-post.php?action=tiktok_oauth_callback' );
+        $redirect      = $this->get_redirect_uri();
 
         if ( empty( $client_key ) || empty( $client_secret ) ) {
             add_settings_error( 'tiktok_auto_poster', 'missing_client', __( 'Enter Client Key and Client Secret before connecting.', 'tiktok-auto-poster' ) );
@@ -159,7 +177,7 @@ class TikTok_Settings {
 
         $client_key    = tiktok_auto_poster_get_option( 'client_key' );
         $client_secret = tiktok_auto_poster_get_option( 'client_secret' );
-        $redirect_uri  = admin_url( 'admin-post.php?action=tiktok_oauth_callback' );
+        $redirect_uri  = $this->get_redirect_uri();
 
         $response = wp_remote_post(
             'https://open.tiktokapis.com/v2/oauth/token/',
@@ -198,6 +216,45 @@ class TikTok_Settings {
 
         wp_safe_redirect( admin_url( 'options-general.php?page=tiktok-auto-poster&connected=1' ) );
         exit;
+    }
+
+    /**
+     * Register rewrite rule for OAuth callback.
+     */
+    public function register_rewrite_rules() {
+        add_rewrite_rule( '^tiktok-oauth-callback/?$', 'index.php?tiktok_oauth_callback=1', 'top' );
+    }
+
+    /**
+     * Allow query var for OAuth callback detection.
+     *
+     * @param array $vars Query vars.
+     * @return array
+     */
+    public function add_query_vars( $vars ) {
+        $vars[] = 'tiktok_oauth_callback';
+
+        return $vars;
+    }
+
+    /**
+     * Maybe handle OAuth callback routed through rewrite.
+     */
+    public function maybe_handle_oauth_callback() {
+        if ( intval( get_query_var( 'tiktok_oauth_callback' ) ) !== 1 ) {
+            return;
+        }
+
+        $this->handle_oauth_callback();
+    }
+
+    /**
+     * Get redirect URI for TikTok OAuth.
+     *
+     * @return string
+     */
+    private function get_redirect_uri() {
+        return trailingslashit( home_url( 'tiktok-oauth-callback' ) );
     }
 
     /**

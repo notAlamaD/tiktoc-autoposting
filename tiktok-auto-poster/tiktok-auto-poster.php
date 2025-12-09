@@ -51,7 +51,9 @@ class TikTok_Auto_Poster {
     public function __construct() {
         add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
         register_activation_hook( __FILE__, array( 'TikTok_Queue', 'activate' ) );
+        register_activation_hook( __FILE__, array( 'TikTok_Settings', 'activate' ) );
         register_deactivation_hook( __FILE__, array( 'TikTok_Queue', 'deactivate' ) );
+        register_deactivation_hook( __FILE__, array( 'TikTok_Settings', 'deactivate' ) );
         register_deactivation_hook( __FILE__, array( 'TikTok_Cron', 'clear_schedule' ) );
 
         new TikTok_Settings();

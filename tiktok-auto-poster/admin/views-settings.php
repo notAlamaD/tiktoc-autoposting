@@ -26,7 +26,7 @@ $statuses   = array(
     $client_key    = $settings['client_key'] ?? '';
     $client_secret = $settings['client_secret'] ?? '';
     $state         = wp_create_nonce( 'tiktok_oauth_state' );
-    $redirect      = admin_url( 'admin-post.php?action=tiktok_oauth_callback' );
+    $redirect      = trailingslashit( home_url( 'tiktok-oauth-callback' ) );
     $auth_url      = add_query_arg(
         array(
             'client_key'    => $client_key,
@@ -81,7 +81,7 @@ $statuses   = array(
             </tr>
             <tr>
                 <th scope="row"><?php esc_html_e( 'Redirect URI', 'tiktok-auto-poster' ); ?></th>
-                <td><code><?php echo esc_html( admin_url( 'admin-post.php?action=tiktok_oauth_callback' ) ); ?></code></td>
+                <td><code><?php echo esc_html( trailingslashit( home_url( 'tiktok-oauth-callback' ) ) ); ?></code></td>
             </tr>
             <tr>
                 <th scope="row"><?php esc_html_e( 'Auto posting enabled', 'tiktok-auto-poster' ); ?></th>
