@@ -33,7 +33,13 @@ class TikTok_Api_Client {
             )
         );
 
-        return $this->parse_response( $response );
+        return $this->parse_response(
+            $response,
+            array(
+                'endpoint' => $endpoint,
+                'method'   => 'GET',
+            )
+        );
     }
 
     /**
@@ -84,21 +90,30 @@ class TikTok_Api_Client {
         $client_key    = tiktok_auto_poster_get_option( 'client_key' );
         $client_secret = tiktok_auto_poster_get_option( 'client_secret' );
 
+        $payload = array(
+            'client_key'    => $client_key,
+            'client_secret' => $client_secret,
+            'grant_type'    => 'refresh_token',
+            'refresh_token' => $token['refresh_token'],
+        );
+
         $response = wp_remote_post(
             'https://open.tiktokapis.com/v2/oauth/token/',
             array(
                 'headers' => array( 'Content-Type' => 'application/x-www-form-urlencoded' ),
-                'body'    => array(
-                    'client_key'    => $client_key,
-                    'client_secret' => $client_secret,
-                    'grant_type'    => 'refresh_token',
-                    'refresh_token' => $token['refresh_token'],
-                ),
+                'body'    => $payload,
                 'timeout' => 30,
             )
         );
 
-        $data = $this->parse_response( $response );
+        $data = $this->parse_response(
+            $response,
+            array(
+                'endpoint' => 'https://open.tiktokapis.com/v2/oauth/token/',
+                'method'   => 'POST',
+                'request'  => $payload,
+            )
+        );
 
         if ( is_wp_error( $data ) ) {
             return $data;
@@ -154,7 +169,17 @@ class TikTok_Api_Client {
 
         $result = wp_remote_post( self::API_BASE . $endpoint, $request );
 
-        return $this->parse_response( $result );
+        return $this->parse_response(
+            $result,
+            array(
+                'endpoint' => self::API_BASE . $endpoint,
+                'method'   => 'POST',
+                'request'  => array(
+                    'filename' => $filename ?? basename( $file_path ),
+                    'type'     => $type,
+                ),
+            )
+        );
     }
 
     /**
@@ -180,7 +205,16 @@ class TikTok_Api_Client {
 
         $result = wp_remote_post( self::API_BASE . 'post/publish/', $request );
 
-        return $this->parse_response( $result );
+        return $this->parse_response(
+            $result,
+            array(
+                'endpoint' => self::API_BASE . 'post/publish/',
+                'method'   => 'POST',
+                'request'  => array(
+                    'caption' => $description,
+                ),
+            )
+        );
     }
 
     /**
@@ -189,15 +223,15 @@ class TikTok_Api_Client {
      * @param WP_Error|array $response Response data.
      * @return array|WP_Error
      */
-    protected function parse_response( $response ) {
+    protected function parse_response( $response, $context = array() ) {
+        $this->maybe_log_request( $response, $context );
+
         if ( is_wp_error( $response ) ) {
             return $response;
         }
 
         $code = wp_remote_retrieve_response_code( $response );
         $body = json_decode( wp_remote_retrieve_body( $response ), true );
-
-        $this->maybe_log_request( $response );
 
         if ( 401 === $code && ! empty( $body['message'] ) && false !== strpos( $body['message'], 'expired' ) ) {
             $refreshed = $this->refresh_token();
@@ -232,24 +266,7 @@ class TikTok_Api_Client {
      *
      * @param array $response Response array.
      */
-    protected function maybe_log_request( $response ) {
-        if ( ! tiktok_auto_poster_get_option( 'enable_logging' ) ) {
-            return;
-        }
-
-        $logs   = get_option( 'tiktok_auto_poster_logs', array() );
-        $logs[] = array(
-            'date'     => current_time( 'mysql' ),
-            'response' => array(
-                'code' => wp_remote_retrieve_response_code( $response ),
-                'body' => wp_remote_retrieve_body( $response ),
-            ),
-        );
-
-        if ( count( $logs ) > 50 ) {
-            $logs = array_slice( $logs, -50 );
-        }
-
-        update_option( 'tiktok_auto_poster_logs', $logs );
+    protected function maybe_log_request( $response, $context ) {
+        tiktok_auto_poster_log_request( $context, $response );
     }
 }

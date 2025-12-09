@@ -71,6 +71,60 @@ function tiktok_auto_poster_set_option( $key, $value ) {
 }
 
 /**
+ * Record a TikTok API log entry when logging is enabled.
+ *
+ * @param array            $context  Request context (endpoint, method, request payload).
+ * @param WP_Error|array   $response Response object or WP_Error.
+ */
+function tiktok_auto_poster_log_request( $context, $response ) {
+    if ( ! tiktok_auto_poster_get_option( 'enable_logging' ) ) {
+        return;
+    }
+
+    $logs = get_option( 'tiktok_auto_poster_logs', array() );
+
+    $logs[] = array(
+        'date'           => current_time( 'mysql' ),
+        'endpoint'       => $context['endpoint'] ?? '',
+        'method'         => $context['method'] ?? '',
+        'request'        => isset( $context['request'] ) ? tiktok_auto_poster_truncate_log( $context['request'] ) : null,
+        'response_code'  => is_wp_error( $response ) ? null : wp_remote_retrieve_response_code( $response ),
+        'response_body'  => is_wp_error( $response ) ? $response->get_error_message() : tiktok_auto_poster_truncate_log( wp_remote_retrieve_body( $response ) ),
+    );
+
+    if ( count( $logs ) > 50 ) {
+        $logs = array_slice( $logs, -50 );
+    }
+
+    update_option( 'tiktok_auto_poster_logs', $logs );
+}
+
+/**
+ * Retrieve stored TikTok API logs.
+ *
+ * @return array
+ */
+function tiktok_auto_poster_get_logs() {
+    return get_option( 'tiktok_auto_poster_logs', array() );
+}
+
+/**
+ * Safely trim log data for storage/display.
+ *
+ * @param mixed $data Arbitrary data.
+ * @return string
+ */
+function tiktok_auto_poster_truncate_log( $data ) {
+    $encoded = is_string( $data ) ? $data : wp_json_encode( $data );
+
+    if ( strlen( $encoded ) > 1000 ) {
+        return substr( $encoded, 0, 1000 ) . '…';
+    }
+
+    return $encoded;
+}
+
+/**
  * Map post object into TikTok description based on template.
  *
  * @param WP_Post $post Post object.

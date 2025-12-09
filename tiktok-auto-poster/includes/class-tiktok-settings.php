@@ -71,6 +71,15 @@ class TikTok_Settings {
             'tiktok-auto-poster-accounts',
             array( $this, 'render_accounts_page' )
         );
+
+        add_submenu_page(
+            'tiktok-auto-poster-queue',
+            __( 'API Logs', 'tiktok-auto-poster' ),
+            __( 'API Logs', 'tiktok-auto-poster' ),
+            'manage_options',
+            'tiktok-auto-poster-logs',
+            array( $this, 'render_logs_page' )
+        );
     }
 
     /**
@@ -204,6 +213,19 @@ class TikTok_Settings {
             )
         );
 
+        tiktok_auto_poster_log_request(
+            array(
+                'endpoint' => 'https://open.tiktokapis.com/v2/oauth/token/',
+                'method'   => 'POST',
+                'request'  => array(
+                    'client_key'   => $client_key,
+                    'redirect_uri' => $redirect_uri,
+                    'grant_type'   => 'authorization_code',
+                ),
+            ),
+            $response
+        );
+
         if ( is_wp_error( $response ) ) {
             wp_die( esc_html( $response->get_error_message() ) );
         }
@@ -316,6 +338,19 @@ class TikTok_Settings {
         }
 
         include TIKTOK_AUTO_POSTER_DIR . 'admin/views-queue.php';
+    }
+
+    /**
+     * Render API logs page.
+     */
+    public function render_logs_page() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        $logs = array_reverse( tiktok_auto_poster_get_logs() );
+
+        include TIKTOK_AUTO_POSTER_DIR . 'admin/views-logs.php';
     }
 
     /**
