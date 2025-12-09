@@ -146,7 +146,7 @@ class TikTok_Settings {
         check_admin_referer( 'tiktok_disconnect' );
 
         tiktok_auto_poster_set_option( 'token', '' );
-        wp_safe_redirect( admin_url( 'options-general.php?page=tiktok-auto-poster' ) );
+        wp_safe_redirect( admin_url( 'admin.php?page=tiktok-auto-poster-accounts' ) );
         exit;
     }
 
@@ -260,7 +260,7 @@ class TikTok_Settings {
 
         tiktok_auto_poster_set_option( 'token', tiktok_auto_poster_encrypt( wp_json_encode( $token ) ) );
 
-        wp_safe_redirect( admin_url( 'options-general.php?page=tiktok-auto-poster&connected=1' ) );
+        wp_safe_redirect( admin_url( 'admin.php?page=tiktok-auto-poster-accounts&connected=1' ) );
         exit;
     }
 
@@ -472,6 +472,21 @@ class TikTok_Settings {
         if ( ! current_user_can( 'manage_options' ) ) {
             return;
         }
+
+        $client_key    = tiktok_auto_poster_get_option( 'client_key' );
+        $client_secret = tiktok_auto_poster_get_option( 'client_secret' );
+        $state         = wp_create_nonce( 'tiktok_oauth_state' );
+        $redirect      = $this->get_redirect_uri();
+        $auth_url      = add_query_arg(
+            array(
+                'client_key'    => $client_key,
+                'scope'         => 'video.upload,video.publish,user.info.basic',
+                'response_type' => 'code',
+                'redirect_uri'  => $redirect,
+                'state'         => $state,
+            ),
+            'https://www.tiktok.com/v2/auth/authorize/'
+        );
 
         $token          = tiktok_auto_poster_get_option( 'token' );
         $token_details  = $token ? json_decode( tiktok_auto_poster_decrypt( $token ), true ) : array();

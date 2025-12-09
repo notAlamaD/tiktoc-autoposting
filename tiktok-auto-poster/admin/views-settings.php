@@ -14,59 +14,15 @@ $statuses   = array(
 
     <?php settings_errors( 'tiktok_auto_poster' ); ?>
 
-    <?php if ( isset( $_GET['connected'] ) ) : ?>
-        <div class="notice notice-success is-dismissible">
-            <p><?php esc_html_e( 'TikTok account connected successfully.', 'tiktok-auto-poster' ); ?></p>
-        </div>
-    <?php endif; ?>
-
-    <?php
-    $token_plain   = isset( $settings['token'] ) ? tiktok_auto_poster_decrypt( $settings['token'] ) : '';
-    $token_data    = $token_plain ? json_decode( $token_plain, true ) : array();
-    $client_key    = $settings['client_key'] ?? '';
-    $client_secret = $settings['client_secret'] ?? '';
-    $state         = wp_create_nonce( 'tiktok_oauth_state' );
-    $redirect      = trailingslashit( home_url( 'tiktok-oauth-callback' ) );
-    $auth_url      = add_query_arg(
-        array(
-            'client_key'    => $client_key,
-            'scope'         => 'video.upload,video.publish,user.info.basic',
-            'response_type' => 'code',
-            'redirect_uri'  => $redirect,
-            'state'         => $state,
-        ),
-        'https://www.tiktok.com/v2/auth/authorize/'
-    );
-    ?>
-
-    <h2><?php esc_html_e( 'TikTok account', 'tiktok-auto-poster' ); ?></h2>
-    <table class="form-table" role="presentation">
-        <tr>
-            <th scope="row"><?php esc_html_e( 'Connection status', 'tiktok-auto-poster' ); ?></th>
-            <td>
-                <?php if ( ! empty( $token_data['access_token'] ) ) : ?>
-                    <p><?php esc_html_e( 'Connected to TikTok.', 'tiktok-auto-poster' ); ?></p>
-                    <?php if ( ! empty( $token_data['open_id'] ) ) : ?>
-                        <p><strong><?php esc_html_e( 'User ID:', 'tiktok-auto-poster' ); ?></strong> <?php echo esc_html( $token_data['open_id'] ); ?></p>
-                    <?php endif; ?>
-                    <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-                        <?php wp_nonce_field( 'tiktok_disconnect' ); ?>
-                        <input type="hidden" name="action" value="tiktok_disconnect" />
-                        <?php submit_button( __( 'Disconnect', 'tiktok-auto-poster' ), 'delete', 'submit', false ); ?>
-                    </form>
-                <?php else : ?>
-                    <p><?php esc_html_e( 'Not connected yet.', 'tiktok-auto-poster' ); ?></p>
-                    <?php if ( $client_key && $client_secret ) : ?>
-                        <a class="button button-primary" href="<?php echo esc_url( $auth_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Connect TikTok account', 'tiktok-auto-poster' ); ?></a>
-                        <p class="description"><?php esc_html_e( 'Click Connect to open the TikTok authorization window in a new tab.', 'tiktok-auto-poster' ); ?></p>
-                    <?php else : ?>
-                        <button class="button button-primary" type="button" disabled="disabled"><?php esc_html_e( 'Connect TikTok account', 'tiktok-auto-poster' ); ?></button>
-                        <p class="description"><?php esc_html_e( 'Save your Client Key and Client Secret first, then use the Connect button to launch TikTok authorization.', 'tiktok-auto-poster' ); ?></p>
-                    <?php endif; ?>
-                <?php endif; ?>
-            </td>
-        </tr>
-    </table>
+    <p>
+        <?php
+        printf(
+            '<a href="%1$s">%2$s</a>',
+            esc_url( admin_url( 'admin.php?page=tiktok-auto-poster-accounts' ) ),
+            esc_html__( 'Manage your TikTok connection and account details from the Connected Accounts page.', 'tiktok-auto-poster' )
+        );
+        ?>
+    </p>
 
     <form method="post" action="options.php">
         <?php settings_fields( 'tiktok-auto-poster' ); ?>

@@ -23,9 +23,34 @@ if ( $account_result instanceof WP_Error ) {
     <h1><?php esc_html_e( 'Connected TikTok Accounts', 'tiktok-auto-poster' ); ?></h1>
     <p><?php esc_html_e( 'Review the TikTok accounts currently authorized for automatic posting.', 'tiktok-auto-poster' ); ?></p>
 
+    <?php if ( isset( $_GET['connected'] ) ) : ?>
+        <div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'TikTok account connected successfully.', 'tiktok-auto-poster' ); ?></p></div>
+    <?php endif; ?>
+
     <?php if ( $connection_error ) : ?>
         <div class="notice notice-warning"><p><?php echo esc_html( $connection_error->get_error_message() ); ?></p></div>
     <?php endif; ?>
+
+    <div class="card" style="max-width: 960px; margin-top: 15px;">
+        <h2><?php esc_html_e( 'Connection status', 'tiktok-auto-poster' ); ?></h2>
+        <?php if ( empty( $token_details['access_token'] ) ) : ?>
+            <p><?php esc_html_e( 'Not connected yet. Use the button below to authorize one TikTok account for posting.', 'tiktok-auto-poster' ); ?></p>
+            <?php if ( $client_key && $client_secret ) : ?>
+                <a class="button button-primary" href="<?php echo esc_url( $auth_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Connect TikTok account', 'tiktok-auto-poster' ); ?></a>
+                <p class="description"><?php esc_html_e( 'Connect opens TikTok authorization in a new tab. Return here after approving access.', 'tiktok-auto-poster' ); ?></p>
+            <?php else : ?>
+                <button class="button button-primary" type="button" disabled="disabled"><?php esc_html_e( 'Connect TikTok account', 'tiktok-auto-poster' ); ?></button>
+                <p class="description"><?php esc_html_e( 'Save your Client Key and Client Secret in Settings before connecting.', 'tiktok-auto-poster' ); ?></p>
+            <?php endif; ?>
+        <?php else : ?>
+            <p><?php esc_html_e( 'Connected to TikTok.', 'tiktok-auto-poster' ); ?></p>
+            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+                <?php wp_nonce_field( 'tiktok_disconnect' ); ?>
+                <input type="hidden" name="action" value="tiktok_disconnect" />
+                <?php submit_button( __( 'Disconnect', 'tiktok-auto-poster' ), 'delete', 'submit', false ); ?>
+            </form>
+        <?php endif; ?>
+    </div>
 
     <table class="widefat striped">
         <thead>
