@@ -27,6 +27,20 @@ WordPress plugin for automatically publishing posts to TikTok using the official
 - Set the redirect URI to the value shown in plugin settings (`/tiktok-oauth-callback/`).
 - After saving credentials, use the **Connect TikTok account** button on the settings page (opens in a new tab) to populate `access_token` and `refresh_token` values.
 
+### Information for TikTok App Review
+Provide the following explanation in the TikTok review form to describe how the plugin uses TikTok products and scopes:
+
+- **Products**
+  - **Login Kit**: Used to authenticate the site administrator via OAuth so the plugin can obtain and refresh tokens for posting.
+  - **Content Posting API**: Used to upload media and publish TikTok posts that mirror WordPress content.
+
+- **Scopes**
+  - **`user.info.basic`**: Retrieved during OAuth to confirm the TikTok account identity and store the corresponding user ID alongside tokens.
+  - **`video.upload`**: Required to upload video (and image, if supported) files selected from the WordPress post to TikTok.
+  - **`video.publish`**: Required to publish the uploaded media with the generated description to the connected TikTok account.
+
+If you submit a revision to TikTok, note any changes you made (for example, updated redirect URI or revised scopes) when resubmitting.
+
 ## Notes
 - Tokens are stored in `wp_options` with encryption using the WordPress salt.
 - The cron interval uses the value chosen in settings (5/15/30/60 minutes).
