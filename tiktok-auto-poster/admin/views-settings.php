@@ -11,6 +11,47 @@ $statuses   = array(
 ?>
 <div class="wrap">
     <h1><?php esc_html_e( 'TikTok Auto Poster Settings', 'tiktok-auto-poster' ); ?></h1>
+
+    <?php settings_errors( 'tiktok_auto_poster' ); ?>
+
+    <?php if ( isset( $_GET['connected'] ) ) : ?>
+        <div class="notice notice-success is-dismissible">
+            <p><?php esc_html_e( 'TikTok account connected successfully.', 'tiktok-auto-poster' ); ?></p>
+        </div>
+    <?php endif; ?>
+
+    <?php
+    $token_plain = isset( $settings['token'] ) ? tiktok_auto_poster_decrypt( $settings['token'] ) : '';
+    $token_data  = $token_plain ? json_decode( $token_plain, true ) : array();
+    ?>
+
+    <h2><?php esc_html_e( 'TikTok account', 'tiktok-auto-poster' ); ?></h2>
+    <table class="form-table" role="presentation">
+        <tr>
+            <th scope="row"><?php esc_html_e( 'Connection status', 'tiktok-auto-poster' ); ?></th>
+            <td>
+                <?php if ( ! empty( $token_data['access_token'] ) ) : ?>
+                    <p><?php esc_html_e( 'Connected to TikTok.', 'tiktok-auto-poster' ); ?></p>
+                    <?php if ( ! empty( $token_data['open_id'] ) ) : ?>
+                        <p><strong><?php esc_html_e( 'User ID:', 'tiktok-auto-poster' ); ?></strong> <?php echo esc_html( $token_data['open_id'] ); ?></p>
+                    <?php endif; ?>
+                    <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+                        <?php wp_nonce_field( 'tiktok_disconnect' ); ?>
+                        <input type="hidden" name="action" value="tiktok_disconnect" />
+                        <?php submit_button( __( 'Disconnect', 'tiktok-auto-poster' ), 'delete', 'submit', false ); ?>
+                    </form>
+                <?php else : ?>
+                    <p><?php esc_html_e( 'Not connected yet.', 'tiktok-auto-poster' ); ?></p>
+                    <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+                        <?php wp_nonce_field( 'tiktok_connect' ); ?>
+                        <input type="hidden" name="action" value="tiktok_start_oauth" />
+                        <?php submit_button( __( 'Connect TikTok account', 'tiktok-auto-poster' ), 'primary', 'submit', false ); ?>
+                    </form>
+                <?php endif; ?>
+            </td>
+        </tr>
+    </table>
+
     <form method="post" action="options.php">
         <?php settings_fields( 'tiktok-auto-poster' ); ?>
         <table class="form-table" role="presentation">

@@ -17,6 +17,8 @@ class TikTok_Settings {
         add_action( 'admin_menu', array( $this, 'register_menu' ) );
         add_action( 'admin_init', array( $this, 'register_settings' ) );
         add_action( 'admin_post_tiktok_disconnect', array( $this, 'disconnect' ) );
+        add_action( 'admin_post_tiktok_start_oauth', array( $this, 'start_oauth' ) );
+        add_action( 'admin_post_tiktok_oauth_callback', array( $this, 'handle_oauth_callback' ) );
         add_action( 'update_option_tiktok_auto_poster_settings', array( $this, 'after_settings_saved' ), 10, 3 );
     }
 
@@ -94,6 +96,105 @@ class TikTok_Settings {
 
         tiktok_auto_poster_set_option( 'token', '' );
         wp_safe_redirect( admin_url( 'options-general.php?page=tiktok-auto-poster' ) );
+        exit;
+    }
+
+    /**
+     * Start OAuth flow by redirecting to TikTok.
+     */
+    public function start_oauth() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Unauthorized', 'tiktok-auto-poster' ) );
+        }
+
+        check_admin_referer( 'tiktok_connect' );
+
+        $client_key = tiktok_auto_poster_get_option( 'client_key' );
+        $redirect   = admin_url( 'admin-post.php?action=tiktok_oauth_callback' );
+
+        if ( empty( $client_key ) ) {
+            add_settings_error( 'tiktok_auto_poster', 'missing_client', __( 'Enter Client Key before connecting.', 'tiktok-auto-poster' ) );
+            wp_safe_redirect( admin_url( 'options-general.php?page=tiktok-auto-poster' ) );
+            exit;
+        }
+
+        $state = wp_create_nonce( 'tiktok_oauth_state' );
+
+        $auth_url = add_query_arg(
+            array(
+                'client_key'    => $client_key,
+                'scope'         => 'video.upload,video.publish,user.info.basic',
+                'response_type' => 'code',
+                'redirect_uri'  => $redirect,
+                'state'         => $state,
+            ),
+            'https://www.tiktok.com/v2/auth/authorize/'
+        );
+
+        wp_safe_redirect( $auth_url );
+        exit;
+    }
+
+    /**
+     * Handle OAuth callback and exchange code for tokens.
+     */
+    public function handle_oauth_callback() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Unauthorized', 'tiktok-auto-poster' ) );
+        }
+
+        $state = isset( $_GET['state'] ) ? sanitize_text_field( wp_unslash( $_GET['state'] ) ) : '';
+
+        if ( ! wp_verify_nonce( $state, 'tiktok_oauth_state' ) ) {
+            wp_die( esc_html__( 'Invalid OAuth state.', 'tiktok-auto-poster' ) );
+        }
+
+        $code = isset( $_GET['code'] ) ? sanitize_text_field( wp_unslash( $_GET['code'] ) ) : '';
+
+        if ( empty( $code ) ) {
+            wp_die( esc_html__( 'Missing OAuth code.', 'tiktok-auto-poster' ) );
+        }
+
+        $client_key    = tiktok_auto_poster_get_option( 'client_key' );
+        $client_secret = tiktok_auto_poster_get_option( 'client_secret' );
+        $redirect_uri  = admin_url( 'admin-post.php?action=tiktok_oauth_callback' );
+
+        $response = wp_remote_post(
+            'https://open.tiktokapis.com/v2/oauth/token/',
+            array(
+                'headers' => array( 'Content-Type' => 'application/x-www-form-urlencoded' ),
+                'body'    => array(
+                    'client_key'    => $client_key,
+                    'client_secret' => $client_secret,
+                    'code'          => $code,
+                    'grant_type'    => 'authorization_code',
+                    'redirect_uri'  => $redirect_uri,
+                ),
+                'timeout' => 30,
+            )
+        );
+
+        if ( is_wp_error( $response ) ) {
+            wp_die( esc_html( $response->get_error_message() ) );
+        }
+
+        $data = json_decode( wp_remote_retrieve_body( $response ), true );
+
+        if ( empty( $data['access_token'] ) || empty( $data['refresh_token'] ) ) {
+            wp_die( esc_html__( 'Failed to retrieve access token from TikTok.', 'tiktok-auto-poster' ) );
+        }
+
+        $token = array(
+            'access_token'  => $data['access_token'],
+            'refresh_token' => $data['refresh_token'],
+            'expires_at'    => time() + absint( $data['expires_in'] ?? 0 ),
+            'open_id'       => $data['open_id'] ?? '',
+            'scope'         => $data['scope'] ?? '',
+        );
+
+        tiktok_auto_poster_set_option( 'token', tiktok_auto_poster_encrypt( wp_json_encode( $token ) ) );
+
+        wp_safe_redirect( admin_url( 'options-general.php?page=tiktok-auto-poster&connected=1' ) );
         exit;
     }
 
