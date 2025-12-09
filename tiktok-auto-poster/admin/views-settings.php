@@ -21,8 +21,22 @@ $statuses   = array(
     <?php endif; ?>
 
     <?php
-    $token_plain = isset( $settings['token'] ) ? tiktok_auto_poster_decrypt( $settings['token'] ) : '';
-    $token_data  = $token_plain ? json_decode( $token_plain, true ) : array();
+    $token_plain   = isset( $settings['token'] ) ? tiktok_auto_poster_decrypt( $settings['token'] ) : '';
+    $token_data    = $token_plain ? json_decode( $token_plain, true ) : array();
+    $client_key    = $settings['client_key'] ?? '';
+    $client_secret = $settings['client_secret'] ?? '';
+    $state         = wp_create_nonce( 'tiktok_oauth_state' );
+    $redirect      = admin_url( 'admin-post.php?action=tiktok_oauth_callback' );
+    $auth_url      = add_query_arg(
+        array(
+            'client_key'    => $client_key,
+            'scope'         => 'video.upload,video.publish,user.info.basic',
+            'response_type' => 'code',
+            'redirect_uri'  => $redirect,
+            'state'         => $state,
+        ),
+        'https://www.tiktok.com/v2/auth/authorize/'
+    );
     ?>
 
     <h2><?php esc_html_e( 'TikTok account', 'tiktok-auto-poster' ); ?></h2>
@@ -42,12 +56,13 @@ $statuses   = array(
                     </form>
                 <?php else : ?>
                     <p><?php esc_html_e( 'Not connected yet.', 'tiktok-auto-poster' ); ?></p>
-                    <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" target="_blank">
-                        <?php wp_nonce_field( 'tiktok_connect' ); ?>
-                        <input type="hidden" name="action" value="tiktok_start_oauth" />
-                        <?php submit_button( __( 'Connect TikTok account', 'tiktok-auto-poster' ), 'primary', 'submit', false, array( 'formtarget' => '_blank' ) ); ?>
-                        <p class="description"><?php esc_html_e( 'After saving your credentials, click Connect to open the TikTok authorization window in a new tab.', 'tiktok-auto-poster' ); ?></p>
-                    </form>
+                    <?php if ( $client_key && $client_secret ) : ?>
+                        <a class="button button-primary" href="<?php echo esc_url( $auth_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Connect TikTok account', 'tiktok-auto-poster' ); ?></a>
+                        <p class="description"><?php esc_html_e( 'Click Connect to open the TikTok authorization window in a new tab.', 'tiktok-auto-poster' ); ?></p>
+                    <?php else : ?>
+                        <button class="button button-primary" type="button" disabled="disabled"><?php esc_html_e( 'Connect TikTok account', 'tiktok-auto-poster' ); ?></button>
+                        <p class="description"><?php esc_html_e( 'Save your Client Key and Client Secret first, then use the Connect button to launch TikTok authorization.', 'tiktok-auto-poster' ); ?></p>
+                    <?php endif; ?>
                 <?php endif; ?>
             </td>
         </tr>
