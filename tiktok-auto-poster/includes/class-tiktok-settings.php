@@ -22,6 +22,7 @@ class TikTok_Settings {
         add_action( 'admin_post_tiktok_disconnect', array( $this, 'disconnect' ) );
         add_action( 'admin_post_tiktok_start_oauth', array( $this, 'start_oauth' ) );
         add_action( 'admin_post_tiktok_manual_queue', array( $this, 'manual_enqueue' ) );
+        add_action( 'admin_post_tiktok_delete_queue', array( $this, 'delete_queue_item' ) );
         add_action( 'update_option_tiktok_auto_poster_settings', array( $this, 'after_settings_saved' ), 10, 3 );
     }
 
@@ -407,6 +408,30 @@ class TikTok_Settings {
         }
 
         wp_safe_redirect( add_query_arg( array( 'page' => 'tiktok-auto-poster-queue', 'manual_status' => $status ), admin_url( 'admin.php' ) ) );
+        exit;
+    }
+
+    /**
+     * Handle queue item deletion.
+     */
+    public function delete_queue_item() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Unauthorized', 'tiktok-auto-poster' ) );
+        }
+
+        $queue_id = absint( $_POST['queue_id'] ?? 0 );
+
+        if ( ! $queue_id ) {
+            wp_safe_redirect( add_query_arg( array( 'page' => 'tiktok-auto-poster-queue', 'queue_status' => 'error', 'queue_message' => rawurlencode( __( 'Queue item not found.', 'tiktok-auto-poster' ) ) ), admin_url( 'admin.php' ) ) );
+            exit;
+        }
+
+        check_admin_referer( 'tiktok_delete_queue_' . $queue_id );
+
+        $queue = new TikTok_Queue();
+        $queue->delete( $queue_id );
+
+        wp_safe_redirect( add_query_arg( array( 'page' => 'tiktok-auto-poster-queue', 'queue_status' => 'deleted' ), admin_url( 'admin.php' ) ) );
         exit;
     }
 
