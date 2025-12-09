@@ -53,6 +53,27 @@ function tiktok_auto_poster_decrypt( $data ) {
  * @return mixed
  */
 function tiktok_auto_poster_get_option( $key, $default = null ) {
+    if ( 'token' === $key ) {
+        $token_option = get_option( 'tiktok_auto_poster_token', null );
+
+        if ( null !== $token_option && '' !== $token_option ) {
+            return $token_option;
+        }
+
+        $settings = get_option( 'tiktok_auto_poster_settings', array() );
+
+        if ( isset( $settings['token'] ) ) {
+            $token_option = $settings['token'];
+            update_option( 'tiktok_auto_poster_token', $token_option );
+            unset( $settings['token'] );
+            update_option( 'tiktok_auto_poster_settings', $settings );
+
+            return $token_option;
+        }
+
+        return $default;
+    }
+
     $options = get_option( 'tiktok_auto_poster_settings', array() );
 
     return isset( $options[ $key ] ) ? $options[ $key ] : $default;
@@ -65,9 +86,35 @@ function tiktok_auto_poster_get_option( $key, $default = null ) {
  * @param mixed  $value Option value.
  */
 function tiktok_auto_poster_set_option( $key, $value ) {
+    if ( 'token' === $key ) {
+        update_option( 'tiktok_auto_poster_token', $value );
+
+        $options = get_option( 'tiktok_auto_poster_settings', array() );
+        if ( isset( $options['token'] ) ) {
+            unset( $options['token'] );
+            update_option( 'tiktok_auto_poster_settings', $options );
+        }
+
+        return;
+    }
+
     $options         = get_option( 'tiktok_auto_poster_settings', array() );
     $options[ $key ] = $value;
     update_option( 'tiktok_auto_poster_settings', $options );
+}
+
+/**
+ * Migrate legacy token storage from the settings option to a dedicated option.
+ */
+function tiktok_auto_poster_migrate_token_option() {
+    $settings = get_option( 'tiktok_auto_poster_settings', array() );
+    $token    = get_option( 'tiktok_auto_poster_token', null );
+
+    if ( null === $token && isset( $settings['token'] ) ) {
+        update_option( 'tiktok_auto_poster_token', $settings['token'] );
+        unset( $settings['token'] );
+        update_option( 'tiktok_auto_poster_settings', $settings );
+    }
 }
 
 /**

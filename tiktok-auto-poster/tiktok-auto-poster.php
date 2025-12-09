@@ -50,6 +50,7 @@ require_once TIKTOK_AUTO_POSTER_DIR . 'includes/class-tiktok-hooks.php';
 
 class TikTok_Auto_Poster {
     public function __construct() {
+        tiktok_auto_poster_migrate_token_option();
         add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
         register_activation_hook( __FILE__, array( 'TikTok_Queue', 'activate' ) );
         register_activation_hook( __FILE__, array( 'TikTok_Posts', 'activate' ) );
