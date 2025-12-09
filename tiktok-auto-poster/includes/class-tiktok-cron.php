@@ -122,16 +122,7 @@ class TikTok_Cron {
         $client      = new TikTok_Api_Client();
         $description = tiktok_auto_poster_format_description( $post, tiktok_auto_poster_get_option( 'description', '{post_title}' ) );
 
-        $upload = $client->upload_media( $file_path );
-
-        if ( is_wp_error( $upload ) ) {
-            $this->handle_error( $queue, $item, $upload->get_error_message() );
-            return;
-        }
-
-        $media_id = $upload['data']['media_id'] ?? '';
-
-        $post_resp = $client->create_post( $media_id, $description );
+        $post_resp = $client->publish_content( $post, $file_path, $description );
 
         if ( is_wp_error( $post_resp ) ) {
             $this->handle_error( $queue, $item, $post_resp->get_error_message() );

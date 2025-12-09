@@ -203,3 +203,31 @@ function tiktok_auto_poster_get_media_file( $post, $source ) {
      */
     return apply_filters( 'tiktok_poster_media_file', $file_path, $post );
 }
+
+/**
+ * Resolve a media URL from a file path or URL for TikTok Content Posting API.
+ *
+ * @param string $file_path Media path or URL.
+ * @return string
+ */
+function tiktok_auto_poster_get_media_url( $file_path ) {
+    if ( empty( $file_path ) ) {
+        return '';
+    }
+
+    if ( filter_var( $file_path, FILTER_VALIDATE_URL ) ) {
+        return $file_path;
+    }
+
+    $uploads   = wp_get_upload_dir();
+    $normalized_path = wp_normalize_path( $file_path );
+    $base_dir  = wp_normalize_path( trailingslashit( $uploads['basedir'] ) );
+
+    if ( 0 === strpos( $normalized_path, $base_dir ) ) {
+        $relative = ltrim( substr( $normalized_path, strlen( $base_dir ) ), '/' );
+
+        return trailingslashit( $uploads['baseurl'] ) . $relative;
+    }
+
+    return '';
+}

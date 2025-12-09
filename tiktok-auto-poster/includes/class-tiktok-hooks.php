@@ -61,15 +61,7 @@ class TikTok_Hooks {
 
         $client      = new TikTok_Api_Client();
         $description = tiktok_auto_poster_format_description( $post, tiktok_auto_poster_get_option( 'description', '{post_title}' ) );
-        $upload      = $client->upload_media( $file_path );
-
-        if ( is_wp_error( $upload ) ) {
-            $queue->enqueue( $post->ID );
-            return;
-        }
-
-        $media_id  = $upload['data']['media_id'] ?? '';
-        $response  = $client->create_post( $media_id, $description );
+        $response  = $client->publish_content( $post, $file_path, $description );
         $status    = is_wp_error( $response ) ? 'error' : 'success';
         $error_msg = is_wp_error( $response ) ? $response->get_error_message() : '';
 

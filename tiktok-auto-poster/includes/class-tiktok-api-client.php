@@ -129,89 +129,64 @@ class TikTok_Api_Client {
     }
 
     /**
-     * Upload media file.
+     * Publish content using TikTok Content Posting API via pull-from-URL.
      *
-     * @param string $file_path Path or URL.
-     * @param string $type video|image
+     * @param WP_Post $post Post being published.
+     * @param string  $file_path File path or URL to media.
+     * @param string  $description Caption/description template result.
      * @return array|WP_Error
      */
-    public function upload_media( $file_path, $type = 'video' ) {
-        $endpoint = 'video/upload/';
+    public function publish_content( $post, $file_path, $description ) {
+        $file_url = tiktok_auto_poster_get_media_url( $file_path );
 
-        if ( 'image' === $type ) {
-            $endpoint = 'image/upload/';
+        if ( ! $file_url ) {
+            return new WP_Error( 'media_url_missing', __( 'Could not resolve a public media URL for TikTok.', 'tiktok-auto-poster' ) );
         }
 
-        $body = array();
+        $media_type = $this->detect_media_type( $file_path );
 
-        if ( file_exists( $file_path ) ) {
-            $body['file'] = file_get_contents( $file_path );
-            $filename     = basename( $file_path );
+        if ( 'PHOTO' === $media_type ) {
+            $source_info = array(
+                'source'             => 'PULL_FROM_URL',
+                'photo_images'       => array( $file_url ),
+                'photo_cover_index'  => 1,
+            );
         } else {
-            $body['file'] = wp_remote_retrieve_body( wp_remote_get( $file_path ) );
-            $filename     = basename( wp_parse_url( $file_path, PHP_URL_PATH ) );
+            $source_info = array(
+                'source'    => 'PULL_FROM_URL',
+                'video_url' => $file_url,
+            );
+            $media_type  = 'VIDEO';
         }
 
-        if ( empty( $body['file'] ) ) {
-            return new WP_Error( 'missing_media', __( 'Media file is empty.', 'tiktok-auto-poster' ) );
-        }
-
-        $request = array(
-            'headers' => $this->auth_headers(),
-            'timeout' => 60,
-            'body'    => array(
-                'video' => array(
-                    'file'     => $body['file'],
-                    'filename' => $filename,
-                ),
+        $payload = array(
+            'post_info'  => array(
+                'title'       => wp_html_excerpt( get_the_title( $post ), 80 ),
+                'description' => $description,
             ),
+            'source_info' => $source_info,
+            'post_mode'   => 'MEDIA_UPLOAD',
+            'media_type'  => $media_type,
         );
 
-        $result = wp_remote_post( self::API_BASE . $endpoint, $request );
-
-        return $this->parse_response(
-            $result,
+        $result = wp_remote_post(
+            self::API_BASE . 'post/publish/content/init/',
             array(
-                'endpoint' => self::API_BASE . $endpoint,
-                'method'   => 'POST',
-                'request'  => array(
-                    'filename' => $filename ?? basename( $file_path ),
-                    'type'     => $type,
-                ),
+                'headers' => $this->auth_headers(),
+                'timeout' => 45,
+                'body'    => wp_json_encode( $payload ),
             )
         );
-    }
-
-    /**
-     * Create TikTok post with uploaded media.
-     *
-     * @param string $media_id Media id returned by upload.
-     * @param string $description Caption text.
-     * @return array|WP_Error
-     */
-    public function create_post( $media_id, $description ) {
-        $request = array(
-            'headers' => $this->auth_headers(),
-            'timeout' => 30,
-            'body'    => wp_json_encode(
-                array(
-                    'post_info' => array(
-                        'caption' => $description,
-                    ),
-                    'media_id'  => $media_id,
-                )
-            ),
-        );
-
-        $result = wp_remote_post( self::API_BASE . 'post/publish/', $request );
 
         return $this->parse_response(
             $result,
             array(
-                'endpoint' => self::API_BASE . 'post/publish/',
+                'endpoint' => self::API_BASE . 'post/publish/content/init/',
                 'method'   => 'POST',
                 'request'  => array(
-                    'caption' => $description,
+                    'post_info'  => $payload['post_info'],
+                    'source_info' => $source_info,
+                    'media_type' => $media_type,
                 ),
             )
         );
@@ -268,5 +243,22 @@ class TikTok_Api_Client {
      */
     protected function maybe_log_request( $response, $context ) {
         tiktok_auto_poster_log_request( $context, $response );
+    }
+
+    /**
+     * Determine media type for request payload.
+     *
+     * @param string $file_path Path or URL.
+     * @return string PHOTO|VIDEO
+     */
+    protected function detect_media_type( $file_path ) {
+        $extension = strtolower( pathinfo( $file_path, PATHINFO_EXTENSION ) );
+        $image_ext = array( 'jpg', 'jpeg', 'png', 'webp', 'gif' );
+
+        if ( in_array( $extension, $image_ext, true ) ) {
+            return 'PHOTO';
+        }
+
+        return 'VIDEO';
     }
 }
