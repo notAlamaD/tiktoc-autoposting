@@ -13,6 +13,30 @@ class TikTok_Api_Client {
     const API_BASE = 'https://open.tiktokapis.com/v2/';
 
     /**
+     * Retrieve information about the connected TikTok user.
+     *
+     * @return array|WP_Error
+     */
+    public function get_user_info() {
+        $endpoint = add_query_arg(
+            array(
+                'fields' => 'open_id,display_name,avatar_url,bio_description',
+            ),
+            self::API_BASE . 'user/info/'
+        );
+
+        $response = wp_remote_get(
+            $endpoint,
+            array(
+                'headers' => $this->auth_headers(),
+                'timeout' => 20,
+            )
+        );
+
+        return $this->parse_response( $response );
+    }
+
+    /**
      * Retrieve stored token data.
      *
      * @return array

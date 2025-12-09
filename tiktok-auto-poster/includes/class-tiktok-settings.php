@@ -61,6 +61,15 @@ class TikTok_Settings {
             'dashicons-format-video',
             81
         );
+
+        add_submenu_page(
+            'tiktok-auto-poster-queue',
+            __( 'Connected Accounts', 'tiktok-auto-poster' ),
+            __( 'Connected Accounts', 'tiktok-auto-poster' ),
+            'manage_options',
+            'tiktok-auto-poster-accounts',
+            array( $this, 'render_accounts_page' )
+        );
     }
 
     /**
@@ -306,5 +315,25 @@ class TikTok_Settings {
         }
 
         include TIKTOK_AUTO_POSTER_DIR . 'admin/views-queue.php';
+    }
+
+    /**
+     * Render connected accounts page.
+     */
+    public function render_accounts_page() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        $token          = tiktok_auto_poster_get_option( 'token' );
+        $token_details  = $token ? json_decode( tiktok_auto_poster_decrypt( $token ), true ) : array();
+        $client         = new TikTok_Api_Client();
+        $account_result = null;
+
+        if ( ! empty( $token_details['access_token'] ) ) {
+            $account_result = $client->get_user_info();
+        }
+
+        include TIKTOK_AUTO_POSTER_DIR . 'admin/views-accounts.php';
     }
 }
