@@ -25,7 +25,19 @@ if ( ! defined( 'TIKTOK_AUTO_POSTER_URL' ) ) {
 }
 
 if ( ! defined( 'TIKTOK_AUTO_POSTER_SECRET' ) ) {
-    define( 'TIKTOK_AUTO_POSTER_SECRET', wp_salt() );
+    $tiktok_auto_poster_secret = '';
+
+    if ( defined( 'AUTH_KEY' ) && AUTH_KEY ) {
+        $tiktok_auto_poster_secret = AUTH_KEY;
+    } elseif ( defined( 'SECURE_AUTH_KEY' ) && SECURE_AUTH_KEY ) {
+        $tiktok_auto_poster_secret = SECURE_AUTH_KEY;
+    } elseif ( function_exists( 'wp_salt' ) ) {
+        $tiktok_auto_poster_secret = wp_salt();
+    } else {
+        $tiktok_auto_poster_secret = 'tiktok-auto-poster-secret';
+    }
+
+    define( 'TIKTOK_AUTO_POSTER_SECRET', $tiktok_auto_poster_secret );
 }
 
 require_once TIKTOK_AUTO_POSTER_DIR . 'includes/helpers.php';
