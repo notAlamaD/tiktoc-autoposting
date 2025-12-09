@@ -181,7 +181,7 @@ class TikTok_Settings {
         $auth_url = add_query_arg(
             array(
                 'client_key'    => $client_key,
-                'scope'         => 'video.upload,video.publish,user.info.basic',
+                'scope'         => $this->get_required_scope_string(),
                 'response_type' => 'code',
                 'redirect_uri'  => $redirect,
                 'state'         => $state,
@@ -485,7 +485,7 @@ class TikTok_Settings {
         $auth_url      = add_query_arg(
             array(
                 'client_key'    => $client_key,
-                'scope'         => 'video.upload,video.publish,user.info.basic',
+                'scope'         => $this->get_required_scope_string(),
                 'response_type' => 'code',
                 'redirect_uri'  => $redirect,
                 'state'         => $state,
@@ -538,5 +538,12 @@ class TikTok_Settings {
 
         wp_safe_redirect( add_query_arg( array( 'page' => 'tiktok-auto-poster-posts', 'publish_status' => $status, 'publish_message' => rawurlencode( $message ) ), admin_url( 'admin.php' ) ) );
         exit;
+    }
+
+    /**
+     * Return required OAuth scopes as a space-delimited string for TikTok.
+     */
+    private function get_required_scope_string() {
+        return 'user.info.basic video.upload video.publish';
     }
 }

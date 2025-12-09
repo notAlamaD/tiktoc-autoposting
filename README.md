@@ -31,6 +31,7 @@ WordPress plugin for automatically publishing posts to TikTok using the official
 - Create a TikTok developer application and enable content publishing permissions.
 - Set the redirect URI to the value shown in plugin settings (`/tiktok-oauth-callback/`).
 - After saving credentials, use the **Connect TikTok account** button on the Connected Accounts page (opens in a new tab) to populate `access_token` and `refresh_token` values.
+- Ensure your OAuth request includes the required scopes as a space-delimited string: `user.info.basic video.upload video.publish`.
 
 ### Information for TikTok App Review
 Provide the following explanation in the TikTok review form to describe how the plugin uses TikTok products and scopes:
