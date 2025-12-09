@@ -22,7 +22,7 @@ WordPress plugin for automatically publishing posts to TikTok using the official
 2. Enter your TikTok `Client Key` and `Client Secret`. The redirect URI displayed on the page must be added to your TikTok app configuration.
 3. From **TikTok Posts → Connected Accounts**, click **Connect TikTok account** (opens in a new tab) to complete OAuth and store access/refresh tokens.
 4. Choose which post types and statuses should trigger posting.
-5. Configure media source, description template, queue usage, interval, post mode (Direct post vs Inbox/Draft), and optional API logging.
+5. Configure media source, description template, queue usage, interval, post mode (Direct post vs Inbox/Draft), optional API logging, and privacy level for Direct posts (must match a value returned by the creator_info endpoint such as `PUBLIC_TO_EVERYONE`).
 6. Use **TikTok Posts** menu to inspect the queue, see connected accounts, review API logs, and track recent statuses.
 7. From **TikTok Posts → TikTok Queue**, you can manually add any published post to the queue (or trigger an immediate send) by selecting it from the dropdown or entering a Post ID.
 8. From **TikTok Posts → TikTok Posts Status**, review every tracked WordPress post, see its attempts, TikTok Post ID, and publish again instantly if it is pending or errored.
@@ -53,6 +53,7 @@ If you submit a revision to TikTok, note any changes you made (for example, upda
 - TikTok requires public HTTPS-accessible media URLs for pull-from-URL publishing; ensure your media library files are served ov
 er HTTPS.
 - Direct post mode uses TikTok endpoints `post/publish/video/init/` (video) and `post/publish/content/init/` (photo) with `post_mode = DIRECT_POST` for automatic publishing after moderation. Switch to `MEDIA_UPLOAD` if you prefer Inbox/Draft confirmation inside TikTok.
+- TikTok requires `privacy_level` when using `DIRECT_POST`; pick a value surfaced by `/v2/post/publish/creator_info/query/` (for example, `PUBLIC_TO_EVERYONE`, `MUTUALS_ONLY`, or `SELF_ONLY`).
 
 ## Development
 The codebase is organized into the following components:

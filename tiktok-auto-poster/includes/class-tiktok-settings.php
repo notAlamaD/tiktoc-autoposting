@@ -120,8 +120,13 @@ class TikTok_Settings {
         $sanitized['cron_interval']    = sanitize_text_field( $input['cron_interval'] ?? '15' );
         $sanitized['enable_logging']   = ! empty( $input['enable_logging'] );
         $post_mode                     = sanitize_text_field( $input['post_mode'] ?? 'DIRECT_POST' );
+        $privacy_level_raw             = sanitize_text_field( $input['privacy_level'] ?? 'PUBLIC_TO_EVERYONE' );
 
         $sanitized['post_mode'] = in_array( $post_mode, array( 'DIRECT_POST', 'MEDIA_UPLOAD' ), true ) ? $post_mode : 'DIRECT_POST';
+
+        $privacy_level = strtoupper( preg_replace( '/[^A-Z_]/', '', $privacy_level_raw ) );
+
+        $sanitized['privacy_level'] = $privacy_level ? $privacy_level : 'PUBLIC_TO_EVERYONE';
 
         return $sanitized;
     }

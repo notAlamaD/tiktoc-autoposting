@@ -87,6 +87,17 @@ $statuses   = array(
                 </td>
             </tr>
             <tr>
+                <th scope="row"><?php esc_html_e( 'Privacy level (DIRECT_POST only)', 'tiktok-auto-poster' ); ?></th>
+                <td>
+                    <select name="tiktok_auto_poster_settings[privacy_level]">
+                        <option value="PUBLIC_TO_EVERYONE" <?php selected( $settings['privacy_level'] ?? 'PUBLIC_TO_EVERYONE', 'PUBLIC_TO_EVERYONE' ); ?>><?php esc_html_e( 'Public to everyone', 'tiktok-auto-poster' ); ?></option>
+                        <option value="MUTUALS_ONLY" <?php selected( $settings['privacy_level'] ?? 'PUBLIC_TO_EVERYONE', 'MUTUALS_ONLY' ); ?>><?php esc_html_e( 'Mutual followers only', 'tiktok-auto-poster' ); ?></option>
+                        <option value="SELF_ONLY" <?php selected( $settings['privacy_level'] ?? 'PUBLIC_TO_EVERYONE', 'SELF_ONLY' ); ?>><?php esc_html_e( 'Only me', 'tiktok-auto-poster' ); ?></option>
+                    </select>
+                    <p class="description"><?php esc_html_e( 'TikTok requires privacy_level for DIRECT_POST; use a value returned by the creator_info endpoint for your account.', 'tiktok-auto-poster' ); ?></p>
+                </td>
+            </tr>
+            <tr>
                 <th scope="row"><?php esc_html_e( 'Use queue instead of immediate posting', 'tiktok-auto-poster' ); ?></th>
                 <td><input type="checkbox" name="tiktok_auto_poster_settings[queue_enabled]" value="1" <?php checked( $settings['queue_enabled'] ?? 0, 1 ); ?> /></td>
             </tr>

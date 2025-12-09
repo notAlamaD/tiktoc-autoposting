@@ -135,9 +135,10 @@ class TikTok_Api_Client {
      * @param string  $file_path File path or URL to media.
      * @param string  $description Caption/description template result.
      * @param string  $post_mode   TikTok post mode (DIRECT_POST or MEDIA_UPLOAD).
+     * @param string  $privacy_level TikTok privacy level for DIRECT_POST mode.
      * @return array|WP_Error
      */
-    public function publish_content( $post, $file_path, $description, $post_mode = 'DIRECT_POST' ) {
+    public function publish_content( $post, $file_path, $description, $post_mode = 'DIRECT_POST', $privacy_level = 'PUBLIC_TO_EVERYONE' ) {
         $file_url = tiktok_auto_poster_get_media_url( $file_path );
 
         if ( ! $file_url ) {
@@ -168,15 +169,21 @@ class TikTok_Api_Client {
             $endpoint    = self::API_BASE . 'post/publish/video/init/';
         }
 
+        $privacy = strtoupper( preg_replace( '/[^A-Z_]/', '', $privacy_level ) );
+
         $payload = array(
             'post_info'  => array(
-                'title'       => wp_html_excerpt( get_the_title( $post ), 80 ),
-                'description' => $description,
+                'title'         => wp_html_excerpt( get_the_title( $post ), 80 ),
+                'description'   => $description,
             ),
             'source_info' => $source_info,
             'post_mode'   => $post_mode,
             'media_type'  => $media_type,
         );
+
+        if ( 'DIRECT_POST' === $post_mode && $privacy ) {
+            $payload['post_info']['privacy_level'] = $privacy;
+        }
 
         $result = wp_remote_post(
             $endpoint,
