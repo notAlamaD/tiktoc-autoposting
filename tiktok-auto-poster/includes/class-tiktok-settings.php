@@ -544,6 +544,6 @@ class TikTok_Settings {
      * Return required OAuth scopes as a space-delimited string for TikTok.
      */
     private function get_required_scope_string() {
-        return 'user.info.basic video.upload video.publish';
+        return 'user.info.basic,video.upload,video.publish';
     }
 }
