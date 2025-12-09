@@ -241,11 +241,39 @@ class TikTok_Settings {
      * Maybe handle OAuth callback routed through rewrite.
      */
     public function maybe_handle_oauth_callback() {
-        if ( intval( get_query_var( 'tiktok_oauth_callback' ) ) !== 1 ) {
+        if ( ! $this->is_callback_request() ) {
             return;
         }
 
         $this->handle_oauth_callback();
+    }
+
+    /**
+     * Determine whether the current request is targeting the OAuth callback.
+     *
+     * @return bool
+     */
+    private function is_callback_request() {
+        // Primary detection via rewrite/query var.
+        if ( intval( get_query_var( 'tiktok_oauth_callback' ) ) === 1 ) {
+            return true;
+        }
+
+        $slug = 'tiktok-oauth-callback';
+
+        // Fallback for environments where rewrite rules have not flushed yet.
+        if ( isset( $GLOBALS['wp'] ) && isset( $GLOBALS['wp']->request ) ) {
+            if ( trim( $GLOBALS['wp']->request, '/' ) === $slug ) {
+                return true;
+            }
+        }
+
+        // Final safeguard based on the actual request URI path.
+        $path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ), PHP_URL_PATH ) : '';
+        $path = is_string( $path ) ? trim( $path, '/' ) : '';
+        $callback_path = trim( wp_parse_url( home_url( $slug ), PHP_URL_PATH ), '/' );
+
+        return $path === $callback_path;
     }
 
     /**
