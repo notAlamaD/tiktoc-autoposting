@@ -20,7 +20,7 @@ class TikTok_Api_Client {
     public function get_user_info() {
         $endpoint = add_query_arg(
             array(
-                'fields' => 'open_id,display_name,avatar_url,bio_description',
+                'fields' => 'open_id,display_name,avatar_url',
             ),
             self::API_BASE . 'user/info/'
         );

@@ -227,6 +227,7 @@ class TikTok_Settings {
                     'code'          => $code,
                     'grant_type'    => 'authorization_code',
                     'redirect_uri'  => $redirect_uri,
+                    'scope'         => $this->get_required_scope_string(),
                 ),
                 'timeout' => 30,
             )
@@ -240,6 +241,7 @@ class TikTok_Settings {
                     'client_key'   => $client_key,
                     'redirect_uri' => $redirect_uri,
                     'grant_type'   => 'authorization_code',
+                    'scope'         => $this->get_required_scope_string(),
                 ),
             ),
             $response
