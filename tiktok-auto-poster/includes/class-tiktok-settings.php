@@ -359,19 +359,14 @@ class TikTok_Settings {
         $creator_info   = null;
         $creator_error  = null;
         $creator_detail = array();
-        $token_option   = tiktok_auto_poster_get_option( 'token' );
-        $token_details  = $token_option ? json_decode( tiktok_auto_poster_decrypt( $token_option ), true ) : array();
 
-        if ( ! empty( $token_details['access_token'] ) ) {
-            $client = new TikTok_Api_Client();
-            $info   = $client->get_creator_info();
+        $info = tiktok_auto_poster_get_creator_info_cached();
 
-            if ( is_wp_error( $info ) ) {
-                $creator_error = $info;
-            } else {
-                $creator_info   = $info;
-                $creator_detail = $info['data']['creator_info'] ?? $info['creator_info'] ?? array();
-            }
+        if ( is_wp_error( $info ) ) {
+            $creator_error = $info;
+        } else {
+            $creator_info   = $info;
+            $creator_detail = $info['data']['creator_info'] ?? $info['creator_info'] ?? array();
         }
 
         include TIKTOK_AUTO_POSTER_DIR . 'admin/views-queue.php';

@@ -204,7 +204,7 @@ class TikTok_Cron {
         }
 
         $client  = new TikTok_Api_Client();
-        $creator = $client->get_creator_info();
+        $creator = tiktok_auto_poster_get_creator_info_cached();
 
         if ( is_wp_error( $creator ) ) {
             return new WP_Error( 'creator_info_missing', sprintf( __( 'Unable to load TikTok creator info: %s', 'tiktok-auto-poster' ), $creator->get_error_message() ) );

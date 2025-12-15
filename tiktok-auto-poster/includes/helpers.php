@@ -333,3 +333,40 @@ function tiktok_auto_poster_get_media_url( $file_path ) {
 
     return '';
 }
+
+/**
+ * Retrieve creator info with a short cache to reduce redundant API calls.
+ *
+ * @param bool $force_refresh Whether to bypass the cache and fetch fresh data.
+ *
+ * @return array|WP_Error
+ */
+function tiktok_auto_poster_get_creator_info_cached( $force_refresh = false ) {
+    $cache_key = 'tiktok_auto_poster_creator_info';
+
+    if ( ! $force_refresh ) {
+        $cached = get_transient( $cache_key );
+        if ( false !== $cached ) {
+            return $cached;
+        }
+    }
+
+    $token_option  = tiktok_auto_poster_get_option( 'token' );
+    $token_details = $token_option ? json_decode( tiktok_auto_poster_decrypt( $token_option ), true ) : array();
+
+    if ( empty( $token_details['access_token'] ) ) {
+        return new WP_Error( 'tiktok_token_missing', __( 'TikTok access token is missing.', 'tiktok-auto-poster' ) );
+    }
+
+    $client = new TikTok_Api_Client();
+    $info   = $client->get_creator_info();
+
+    if ( is_wp_error( $info ) ) {
+        return $info;
+    }
+
+    // Cache for ten minutes to keep UI responsive without relying on stale data.
+    set_transient( $cache_key, $info, 10 * MINUTE_IN_SECONDS );
+
+    return $info;
+}
