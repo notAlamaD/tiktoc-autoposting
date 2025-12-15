@@ -203,7 +203,45 @@ class TikTok_Cron {
             return new WP_Error( 'media_missing', __( 'Media not found', 'tiktok-auto-poster' ) );
         }
 
-        $client      = new TikTok_Api_Client();
+        $client  = new TikTok_Api_Client();
+        $creator = $client->get_creator_info();
+
+        if ( is_wp_error( $creator ) ) {
+            return new WP_Error( 'creator_info_missing', sprintf( __( 'Unable to load TikTok creator info: %s', 'tiktok-auto-poster' ), $creator->get_error_message() ) );
+        }
+
+        $creator_info = $creator['data']['creator_info'] ?? $creator['creator_info'] ?? array();
+        $can_post     = null;
+
+        if ( isset( $creator_info['can_post'] ) ) {
+            $can_post = (bool) $creator_info['can_post'];
+        } elseif ( isset( $creator_info['can_post_more'] ) ) {
+            $can_post = (bool) $creator_info['can_post_more'];
+        }
+
+        if ( false === $can_post ) {
+            return new WP_Error( 'creator_blocked', __( 'TikTok reports this account cannot publish right now. Please try again later.', 'tiktok-auto-poster' ) );
+        }
+
+        $media_type = tiktok_auto_poster_detect_media_type( $file_path );
+
+        if ( 'VIDEO' === $media_type && ! empty( $creator_info['max_video_post_duration_sec'] ) ) {
+            $max_duration = absint( $creator_info['max_video_post_duration_sec'] );
+            $duration     = tiktok_auto_poster_get_video_duration_seconds( $file_path );
+
+            if ( $duration && $duration > $max_duration ) {
+                return new WP_Error(
+                    'video_too_long',
+                    sprintf(
+                        /* translators: 1: video length, 2: maximum allowed */
+                        __( 'Video duration is %1$s seconds, but the connected TikTok account allows up to %2$s seconds.', 'tiktok-auto-poster' ),
+                        $duration,
+                        $max_duration
+                    )
+                );
+            }
+        }
+
         $description = tiktok_auto_poster_format_description( $post, tiktok_auto_poster_get_option( 'description', '{post_title}' ) );
         $post_mode   = tiktok_auto_poster_get_option( 'post_mode', 'DIRECT_POST' );
         $privacy     = tiktok_auto_poster_get_option( 'privacy_level', 'PUBLIC_TO_EVERYONE' );

@@ -252,6 +252,61 @@ function tiktok_auto_poster_get_media_file( $post, $source ) {
 }
 
 /**
+ * Detect media type based on extension.
+ *
+ * @param string $file_path File path or URL.
+ * @return string PHOTO|VIDEO
+ */
+function tiktok_auto_poster_detect_media_type( $file_path ) {
+    $extension = strtolower( pathinfo( $file_path, PATHINFO_EXTENSION ) );
+    $image_ext = array( 'jpg', 'jpeg', 'png', 'webp', 'gif' );
+
+    if ( in_array( $extension, $image_ext, true ) ) {
+        return 'PHOTO';
+    }
+
+    return 'VIDEO';
+}
+
+/**
+ * Try to resolve the duration of a local video in seconds.
+ *
+ * @param string $file_path Path or URL.
+ * @return int|null
+ */
+function tiktok_auto_poster_get_video_duration_seconds( $file_path ) {
+    if ( ! $file_path ) {
+        return null;
+    }
+
+    $path = $file_path;
+
+    if ( filter_var( $file_path, FILTER_VALIDATE_URL ) ) {
+        $uploads = wp_get_upload_dir();
+
+        if ( ! empty( $uploads['baseurl'] ) && ! empty( $uploads['basedir'] ) && false !== strpos( $file_path, $uploads['baseurl'] ) ) {
+            $path = str_replace( $uploads['baseurl'], $uploads['basedir'], $file_path );
+        }
+    }
+
+    if ( ! file_exists( $path ) ) {
+        return null;
+    }
+
+    if ( ! function_exists( 'wp_read_video_metadata' ) ) {
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+    }
+
+    $meta = wp_read_video_metadata( $path );
+
+    if ( empty( $meta['length'] ) ) {
+        return null;
+    }
+
+    return absint( $meta['length'] );
+}
+
+/**
  * Resolve a media URL from a file path or URL for TikTok Content Posting API.
  *
  * @param string $file_path Media path or URL.

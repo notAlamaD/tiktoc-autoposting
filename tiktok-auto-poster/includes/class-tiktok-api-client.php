@@ -20,10 +20,35 @@ class TikTok_Api_Client {
     public function get_user_info() {
         $endpoint = add_query_arg(
             array(
-                'fields' => 'open_id,display_name,avatar_url',
+                'fields' => 'open_id,display_name,avatar_url,bio_description',
             ),
             self::API_BASE . 'user/info/'
         );
+
+        $response = wp_remote_get(
+            $endpoint,
+            array(
+                'headers' => $this->auth_headers(),
+                'timeout' => 20,
+            )
+        );
+
+        return $this->parse_response(
+            $response,
+            array(
+                'endpoint' => $endpoint,
+                'method'   => 'GET',
+            )
+        );
+    }
+
+    /**
+     * Retrieve creator publishing information.
+     *
+     * @return array|WP_Error
+     */
+    public function get_creator_info() {
+        $endpoint = self::API_BASE . 'post/publish/creator_info/query/';
 
         $response = wp_remote_get(
             $endpoint,
@@ -145,7 +170,7 @@ class TikTok_Api_Client {
             return new WP_Error( 'media_url_missing', __( 'Could not resolve a public media URL for TikTok.', 'tiktok-auto-poster' ) );
         }
 
-        $media_type = $this->detect_media_type( $file_path );
+        $media_type = tiktok_auto_poster_detect_media_type( $file_path );
 
         $secure_file_url = set_url_scheme( $file_url, 'https' );
 
@@ -269,13 +294,6 @@ class TikTok_Api_Client {
      * @return string PHOTO|VIDEO
      */
     protected function detect_media_type( $file_path ) {
-        $extension = strtolower( pathinfo( $file_path, PATHINFO_EXTENSION ) );
-        $image_ext = array( 'jpg', 'jpeg', 'png', 'webp', 'gif' );
-
-        if ( in_array( $extension, $image_ext, true ) ) {
-            return 'PHOTO';
-        }
-
-        return 'VIDEO';
+        return tiktok_auto_poster_detect_media_type( $file_path );
     }
 }

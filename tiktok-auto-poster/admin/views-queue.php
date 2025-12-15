@@ -41,6 +41,28 @@ $queue_message  = isset( $_GET['queue_message'] ) ? sanitize_text_field( wp_unsl
         </div>
     <?php endif; ?>
 
+    <?php if ( $creator_error ) : ?>
+        <div class="notice notice-warning"><p><?php echo esc_html( $creator_error->get_error_message() ); ?></p></div>
+    <?php endif; ?>
+
+    <div class="card tiktok-manual-card">
+        <h2><?php esc_html_e( 'Posting account', 'tiktok-auto-poster' ); ?></h2>
+        <?php if ( empty( $creator_detail ) ) : ?>
+            <p class="description"><?php esc_html_e( 'Connect your TikTok account to see creator availability and upload limits.', 'tiktok-auto-poster' ); ?></p>
+        <?php else : ?>
+            <ul>
+                <li><strong><?php esc_html_e( 'Nickname:', 'tiktok-auto-poster' ); ?></strong> <?php echo esc_html( $creator_detail['nickname'] ?? $creator_detail['display_name'] ?? __( 'Unknown', 'tiktok-auto-poster' ) ); ?></li>
+                <?php if ( isset( $creator_detail['can_post'] ) || isset( $creator_detail['can_post_more'] ) ) : ?>
+                    <li><strong><?php esc_html_e( 'Posting availability:', 'tiktok-auto-poster' ); ?></strong> <?php echo ( isset( $creator_detail['can_post'] ) ? ( $creator_detail['can_post'] ? esc_html__( 'Ready to publish', 'tiktok-auto-poster' ) : esc_html__( 'Cannot publish now', 'tiktok-auto-poster' ) ) : ( $creator_detail['can_post_more'] ? esc_html__( 'Ready to publish', 'tiktok-auto-poster' ) : esc_html__( 'Cannot publish now', 'tiktok-auto-poster' ) ) ); ?></li>
+                <?php endif; ?>
+                <?php if ( ! empty( $creator_detail['max_video_post_duration_sec'] ) ) : ?>
+                    <li><strong><?php esc_html_e( 'Max video duration:', 'tiktok-auto-poster' ); ?></strong> <?php echo esc_html( $creator_detail['max_video_post_duration_sec'] ); ?> <?php esc_html_e( 'seconds', 'tiktok-auto-poster' ); ?></li>
+                <?php endif; ?>
+            </ul>
+            <p class="description"><?php esc_html_e( 'Creator info is pulled from TikTok each time you open this page so the publish form reflects the latest limits.', 'tiktok-auto-poster' ); ?></p>
+        <?php endif; ?>
+    </div>
+
     <div class="card tiktok-manual-card">
         <h2><?php esc_html_e( 'Manual posting', 'tiktok-auto-poster' ); ?></h2>
         <p class="description"><?php esc_html_e( 'Pick a recent post or provide an ID to push it into the TikTok queue. Use the immediate send option to process right away.', 'tiktok-auto-poster' ); ?></p>

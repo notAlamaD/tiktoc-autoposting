@@ -15,7 +15,13 @@ $connection_error  = null;
 if ( $account_result instanceof WP_Error ) {
     $connection_error = $account_result;
 } elseif ( is_array( $account_result ) ) {
-    $profile_data = isset( $account_result['data'] ) ? $account_result['data'] : $account_result;
+    if ( isset( $account_result['data']['user'] ) ) {
+        $profile_data = $account_result['data']['user'];
+    } elseif ( isset( $account_result['data'] ) ) {
+        $profile_data = $account_result['data'];
+    } else {
+        $profile_data = $account_result;
+    }
 }
 
 ?>

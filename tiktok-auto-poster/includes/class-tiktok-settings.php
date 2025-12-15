@@ -227,7 +227,6 @@ class TikTok_Settings {
                     'code'          => $code,
                     'grant_type'    => 'authorization_code',
                     'redirect_uri'  => $redirect_uri,
-                    'scope'         => $this->get_required_scope_string(),
                 ),
                 'timeout' => 30,
             )
@@ -241,7 +240,6 @@ class TikTok_Settings {
                     'client_key'   => $client_key,
                     'redirect_uri' => $redirect_uri,
                     'grant_type'   => 'authorization_code',
-                    'scope'         => $this->get_required_scope_string(),
                 ),
             ),
             $response
@@ -358,6 +356,24 @@ class TikTok_Settings {
             return;
         }
 
+        $creator_info   = null;
+        $creator_error  = null;
+        $creator_detail = array();
+        $token_option   = tiktok_auto_poster_get_option( 'token' );
+        $token_details  = $token_option ? json_decode( tiktok_auto_poster_decrypt( $token_option ), true ) : array();
+
+        if ( ! empty( $token_details['access_token'] ) ) {
+            $client = new TikTok_Api_Client();
+            $info   = $client->get_creator_info();
+
+            if ( is_wp_error( $info ) ) {
+                $creator_error = $info;
+            } else {
+                $creator_info   = $info;
+                $creator_detail = $info['data']['creator_info'] ?? $info['creator_info'] ?? array();
+            }
+        }
+
         include TIKTOK_AUTO_POSTER_DIR . 'admin/views-queue.php';
     }
 
@@ -429,7 +445,8 @@ class TikTok_Settings {
             exit;
         }
 
-        $status = 'queued';
+        $status   = 'queued';
+        $feedback = '';
 
         if ( $send_now ) {
             $cron = new TikTok_Cron();
@@ -440,11 +457,23 @@ class TikTok_Settings {
                 $processed = $queue->get( $queue_id );
                 if ( $processed && ! empty( $processed['status'] ) ) {
                     $status = $processed['status'];
+                    if ( ! empty( $processed['last_error'] ) ) {
+                        $feedback = $processed['last_error'];
+                    }
                 }
             }
         }
 
-        wp_safe_redirect( add_query_arg( array( 'page' => 'tiktok-auto-poster-queue', 'manual_status' => $status ), admin_url( 'admin.php' ) ) );
+        $redirect_args = array(
+            'page'          => 'tiktok-auto-poster-queue',
+            'manual_status' => $status,
+        );
+
+        if ( $feedback ) {
+            $redirect_args['manual_message'] = rawurlencode( $feedback );
+        }
+
+        wp_safe_redirect( add_query_arg( $redirect_args, admin_url( 'admin.php' ) ) );
         exit;
     }
 
@@ -546,6 +575,6 @@ class TikTok_Settings {
      * Return required OAuth scopes as a space-delimited string for TikTok.
      */
     private function get_required_scope_string() {
-        return 'user.info.basic,video.upload,video.publish';
+        return 'user.info.basic video.upload video.publish';
     }
 }
